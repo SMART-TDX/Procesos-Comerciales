@@ -905,7 +905,7 @@ test("la aplicación conserva su arquitectura estática y registra solo por el c
   var contents = files.map(function (file) { return fs.readFileSync(path.join(root, file), "utf8"); }).join("\n");
   var remoteUrls = contents.match(/https?:\/\/[^\s"']+/gi) || [];
   remoteUrls.forEach(function (url) {
-    assert(/^https:\/\/(mail\.google\.com\/mail\/|web\.whatsapp\.com\/send|script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec)/i.test(url), "Se encontró una URL remota no autorizada: " + url);
+    assert(/^https:\/\/(mail\.google\.com\/mail\/|web\.whatsapp\.com\/send|script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec|smart-tdx\.github\.io\/Procesos-Comerciales\/Calculadora%20comercial%20Instituto\/)/i.test(url), "Se encontró una URL remota no autorizada: " + url);
   });
   assert(!/\bfetch\s*\(/i.test(contents), "Se encontró fetch");
   assert(!/localStorage|sessionStorage|indexedDB/i.test(contents), "Se encontró persistencia local");

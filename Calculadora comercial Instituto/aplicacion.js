@@ -5164,6 +5164,38 @@
 
   var pendingPrintSaveAsPdf = false;
   var pendingPrintFileName = "";
+  var STANDALONE_APP_URL = "https://smart-tdx.github.io/Procesos-Comerciales/Calculadora%20comercial%20Instituto/";
+
+  function isEmbeddedInAnotherPage() {
+    try {
+      return global.self !== global.top;
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function printPreparedDocumentInStandaloneWindow(printWindow, fileName) {
+    var title = String(fileName || "Cotizacion_Smart.pdf").replace(/\.pdf$/i, "");
+    var bodyClass = document.body.classList.contains("cash-payment-mode") ? "cash-payment-mode" : "";
+    var html = "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\">" +
+      "<base href=\"" + STANDALONE_APP_URL + "\">" +
+      "<title>" + title.replace(/[<>&\"]/g, "") + "</title>" +
+      "<link rel=\"stylesheet\" href=\"" + STANDALONE_APP_URL + "estilos.css\">" +
+      "</head><body class=\"" + bodyClass + "\">" + elements["print-document"].outerHTML + "</body></html>";
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    global.setTimeout(function () {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch (error) {
+        showToast("La pestaña se abrió, pero el navegador bloqueó la impresión. Usa Ctrl + P en esa pestaña.");
+      } finally {
+        cleanupPrintSession("impresion_en_ventana_independiente");
+      }
+    }, 700);
+  }
 
   function closePrintGuidance() {
     if (typeof elements["print-guidance-dialog"].close === "function") {
@@ -5189,6 +5221,14 @@
     }
     var saveAsPdf = pendingPrintSaveAsPdf;
     var requestedPdfFileName = pendingPrintFileName;
+    var embedded = isEmbeddedInAnotherPage();
+    var standalonePrintWindow = embedded ? global.open("about:blank", "_blank") : null;
+    if (embedded && !standalonePrintWindow) {
+      closePrintGuidance();
+      showToast("Google Sites requiere permitir ventanas emergentes para descargar el PDF.");
+      setPrintControlsDisabled(false);
+      return;
+    }
     closePrintGuidance();
     showClientView();
     var session = createFreshPrintSession();
@@ -5210,6 +5250,10 @@
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
       updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
       showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
+    }
+    if (standalonePrintWindow) {
+      printPreparedDocumentInStandaloneWindow(standalonePrintWindow, session.pdfFileName || requestedPdfFileName);
+      return;
     }
     global.setTimeout(function () {
       if (!activePrintSession || activePrintSession.id !== session.id) {
