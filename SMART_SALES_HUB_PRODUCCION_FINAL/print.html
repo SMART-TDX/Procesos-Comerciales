@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Propuesta Comercial Smart</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/propuesta.css">
+  <link rel="stylesheet" href="css/impresion.css">
+  <link rel="stylesheet" href="css/propuesta-unificada.css">
+</head>
+<body class="imprimiendo-propuesta ventana-impresion">
+  <header class="barra-impresion" aria-label="Acciones de impresión">
+    <div><strong>Propuesta Comercial Smart</strong><span>Vista lista para impresión</span></div>
+    <button id="imprimir-documento" type="button">Imprimir / Guardar como PDF</button>
+  </header>
+  <main id="documento-impresion" class="propuesta-preview" aria-live="polite">
+    <p class="estado-impresion">Preparando la propuesta…</p>
+  </main>
+  <script src="js/print.js"></script>
+</body>
+</html>
