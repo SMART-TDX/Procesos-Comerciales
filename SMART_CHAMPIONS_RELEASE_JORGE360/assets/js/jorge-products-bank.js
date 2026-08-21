@@ -1,1 +1,0 @@
-(function(g){'use strict';g.JORGE_PRODUCTS_BANK=g.JorgeKnowledgeBankCore.createBank('PRODUCTS_SMART',['PRODUCT_INSTITUTE','PRODUCT_ONLINE','PRODUCT_FLEX'],{products:['INSTITUTO','SMART_ONLINE','SMART_FLEX']});})(typeof window!=='undefined'?window:globalThis);
