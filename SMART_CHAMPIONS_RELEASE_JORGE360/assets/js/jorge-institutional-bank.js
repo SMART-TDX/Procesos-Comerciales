@@ -1,0 +1,1 @@
+(function(g){'use strict';g.JORGE_INSTITUTIONAL_BANK=g.JorgeKnowledgeBankCore.createBank('INSTITUTIONAL_SMART',['SMART_CORE','TMK_PLAYBOOK','SMART_CONVERSATION','SMART_OBJECTIONS']);})(typeof window!=='undefined'?window:globalThis);
