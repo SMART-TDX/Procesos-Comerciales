@@ -416,6 +416,32 @@
     const documento = obtenerDocumentoImpresion();
     if (!documento) return;
     const destino = new URL("print.html", window.location.href);
+
+    // Google Sites y otros contenedores cargan la aplicacion dentro de un
+    // iframe que puede bloquear window.print(). En ese caso abrimos la vista
+    // de impresion como pagina de nivel superior y transportamos el documento
+    // en el fragmento (el fragmento nunca se envia al servidor).
+    let embebida = false;
+    try {
+      embebida = window.self !== window.top;
+    } catch (error) {
+      embebida = true;
+    }
+
+    if (embebida) {
+      destino.hash = "documento=" + encodeURIComponent(documento);
+      const enlaceImpresion = document.createElement("a");
+      enlaceImpresion.href = destino.href;
+      enlaceImpresion.target = "_blank";
+      enlaceImpresion.rel = "noopener noreferrer";
+      enlaceImpresion.hidden = true;
+      document.body.appendChild(enlaceImpresion);
+      enlaceImpresion.click();
+      enlaceImpresion.remove();
+      document.body.classList.remove("imprimiendo-propuesta");
+      return;
+    }
+
     try {
       window.sessionStorage.setItem("smart.propuesta.impresion", documento);
     } catch (error) {

@@ -16,7 +16,13 @@
     }
     const fragmento = window.location.hash.slice(1);
     if (fragmento.indexOf("documento=") === 0) {
-      try { return decodeURIComponent(fragmento.slice("documento=".length)); } catch (error) { return ""; }
+      try {
+        const documento = decodeURIComponent(fragmento.slice("documento=".length));
+        // Retiramos de la barra de direcciones los datos temporales de la
+        // propuesta despues de recuperarlos, sin recargar la pagina.
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        return documento;
+      } catch (error) { return ""; }
     }
     try {
       if (!window.opener || !window.opener.SmartPropuesta) return "";
