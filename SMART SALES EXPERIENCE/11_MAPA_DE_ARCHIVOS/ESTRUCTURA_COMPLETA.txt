@@ -1,0 +1,583 @@
+SMART_SALES_ENTREGA_FINAL_IT\
+[D] 01_CODIGO_PRODUCCION
+  [D] SMART_SALES_EXPERIENCE
+    [D] assets
+      [D] certification-model
+        [F] page-1.jpg
+        [F] page-2.jpg
+        [F] page-3.jpg
+        [F] page-4.jpg
+        [F] page-5.jpg
+        [F] page-6.jpg
+      [D] flags
+        [F] colombia.svg
+        [F] peru.svg
+        [F] united-states.svg
+      [D] icons
+        [F] academic-content.svg
+        [F] academic-digital.svg
+        [F] academic-international.svg
+        [F] barrier-communication.svg
+        [F] barrier-confidence.svg
+        [F] barrier-lost.svg
+        [F] barrier-prepare.svg
+        [F] barrier-unclear.svg
+        [F] employment-frequent.svg
+        [F] employment-not-yet.svg
+        [F] employment-opportunity.svg
+        [F] employment-sometimes.svg
+        [F] goal-ascend.svg
+        [F] goal-global.svg
+        [F] goal-income.svg
+        [F] goal-job.svg
+        [F] goal-other.svg
+        [F] goal-profile.svg
+        [F] institution-presence.svg
+        [F] institution-students.svg
+        [F] institution-world.svg
+        [F] profile-business.svg
+        [F] profile-opportunity.svg
+        [F] profile-personal.svg
+        [F] profile-study.svg
+        [F] profile-work.svg
+      [D] images
+        [D] executives
+          [F] ALISON ALDANA GARCIA.jpg
+          [F] ANGIE STHEFANY BRICEÑO GONZALEZ.jpg
+          [F] BRIGETH SAMANTA VARON ORTIZ.jpg
+          [F] CLAUDIA LILIANA GONZALEZ LOPEZ.jpg
+          [F] CRISTIAN JAVIER GARCIA BARRETO.jpg
+          [F] DANIEL ESTEBAN GALINDO FANDIÑO.jpg
+          [F] ERICK JOHAN ROCHA BENITEZ.jpg
+          [F] FLOR VIVIANA CASTAÑEDA LOZADA.jpg
+          [F] GERMAN ANDRES SIERRA ORTIZ.jpg
+          [F] GIAN FRANCO CHINOME CALVO.jpg
+          [F] IVETTE TATIANA NIETO ARENAS.jpg
+          [F] JHON ALEXANDER AVILA QUIROGA.jpg
+          [F] JUAN SEBASTIAN ROMERO LONDOÑO.png
+          [F] Juliana Carolina Rodriguez Moncaleano.jpg
+          [F] LAURA SOFIA DAZA ZEA.jpg
+          [F] NICOLLE YURANI MURCIA AVILA.jpg
+          [F] PAOLA ANDREA RESTREPO TORRES.jpg
+        [D] flex-benefits
+          [F] autoestudio-plataforma.webp
+          [F] clases-120-minutos.jpg
+          [F] clases-en-vivo-smart-flex.webp
+          [F] constancia-asistencia.webp
+          [F] contenido-cambridge-english.webp
+          [F] EXAMEN LINGUASKILL APROBADO.png
+          [F] grupos-maximo-8.png
+          [F] plataforma-autoestudio-oficial.png
+          [F] preparacion-linguaskill.jpg
+          [F] SMART ZONE(1).png
+          [F] smartzone-practica.webp
+        [F] smart-acompanamiento-online-01.webp
+        [F] smart-cambridge-interchange.webp
+        [F] smart-estudiantes-online-01.webp
+        [F] smart-sede-exterior-01.webp
+        [F] smart-sede-exterior-02.webp
+        [F] smart-sede-interior-01.jpg
+        [F] smart-sede-interior-02.webp
+        [F] smart-sede-recepcion-01.webp
+        [F] smart-sede-recepcion-02.webp
+        [F] team-smart-docentes.webp
+      [D] logos
+        [F] cambridge-university-press-educational-partner.jpg
+        [F] smart-logo-provisional.jpg
+      [D] maps
+        [F] colombia-data.js
+        [F] colombia.geo.json
+        [F] countries-data.js
+        [F] countries.geo.json
+        [F] peru.geo.json
+        [F] united-states.geo.json
+      [D] payment-options
+        [F] addi.jpg
+        [F] bancolombia.png
+        [F] cesantias.png
+        [F] comultrasan.jpg
+        [F] cuotas de financiacion.png
+        [F] fincomercio.jpg
+        [F] PRAMI.png
+        [F] pse.jpg
+        [F] visaymaster.jpg
+      [D] smart-online
+        [F] page-01.jpg
+        [F] page-02.jpg
+        [F] page-03.jpg
+        [F] page-04.jpg
+        [F] page-05.jpg
+        [F] page-06.jpg
+        [F] page-07.jpg
+        [F] page-08.jpg
+        [F] page-09.jpg
+        [F] page-10.jpg
+        [F] page-11.jpg
+        [F] page-12.jpg
+        [F] page-13.jpg
+        [F] page-14.jpg
+      [D] video
+    [D] css
+      [F] base.css
+      [F] components.css
+      [F] consolidation.css
+      [F] employment.css
+      [F] experience.css
+      [F] phase02-adjustments.css
+      [F] recommendation.css
+      [F] responsive.css
+      [F] summary.css
+      [F] variables.css
+    [D] data
+      [F] discovery.js
+      [F] employment-discovery.js
+      [F] executives.js
+      [F] institution.js
+      [F] locations.js
+      [F] products.js
+      [F] recommendation-rules.js
+      [F] smart-locations.js
+    [F] index.html
+    [D] js
+      [F] app.js
+      [F] certification-model.js
+      [F] employment.js
+      [F] integration.js
+      [F] navigation.js
+      [F] quick-navigation.js
+      [F] recommendation.js
+      [F] session.js
+      [F] state.js
+      [F] summary.js
+    [D] modules
+      [D] discovery
+      [D] enrollment
+      [D] executive
+      [D] institution
+      [D] investment
+      [D] preclose
+      [D] products
+      [D] recommendation
+      [D] welcome
+    [F] README.md
+    [F] summary.html
+    [D] vendor
+      [D] maplibre-gl
+        [F] maplibre-gl.css
+        [F] maplibre-gl.js
+      [D] smart-sales-engine
+        [F] README.md
+  [D] SMART_SALES_HUB_PRODUCCION_FINAL
+    [D] css
+      [F] estilos.css
+      [F] experience-bridge.css
+      [F] impresion.css
+      [F] propuesta-unificada.css
+      [F] propuesta.css
+    [F] index.html
+    [D] js
+      [F] aplicacion.js
+      [F] config.js
+      [F] configuracion-comercial.js
+      [F] experience-bridge.js
+      [F] motor-comercial.js
+      [F] plan-pagos.js
+      [F] print.js
+      [F] propuesta.js
+      [F] tarifas.js
+      [F] validaciones.js
+    [F] logo-smart.svg.png
+    [F] print.html
+[D] 02_ASSETS
+  [D] CAMBRIDGE
+    [F] cambridge-university-press-educational-partner.jpg
+    [F] contenido-cambridge-english.webp
+    [F] smart-cambridge-interchange.webp
+  [D] CERTIFICACIONES
+    [F] page-1.jpg
+    [F] page-2.jpg
+    [F] page-3.jpg
+    [F] page-4.jpg
+    [F] page-5.jpg
+    [F] page-6.jpg
+  [D] EJECUTIVOS
+    [F] ALISON ALDANA GARCIA.jpg
+    [F] ANGIE STHEFANY BRICEÑO GONZALEZ.jpg
+    [F] BRIGETH SAMANTA VARON ORTIZ.jpg
+    [F] CLAUDIA LILIANA GONZALEZ LOPEZ.jpg
+    [F] CRISTIAN JAVIER GARCIA BARRETO.jpg
+    [F] DANIEL ESTEBAN GALINDO FANDIÑO.jpg
+    [F] ERICK JOHAN ROCHA BENITEZ.jpg
+    [F] FLOR VIVIANA CASTAÑEDA LOZADA.jpg
+    [F] GERMAN ANDRES SIERRA ORTIZ.jpg
+    [F] GIAN FRANCO CHINOME CALVO.jpg
+    [F] IVETTE TATIANA NIETO ARENAS.jpg
+    [F] JHON ALEXANDER AVILA QUIROGA.jpg
+    [F] JUAN SEBASTIAN ROMERO LONDOÑO.png
+    [F] Juliana Carolina Rodriguez Moncaleano.jpg
+    [F] LAURA SOFIA DAZA ZEA.jpg
+    [F] NICOLLE YURANI MURCIA AVILA.jpg
+    [F] PAOLA ANDREA RESTREPO TORRES.jpg
+  [D] FORMAS_DE_PAGO
+    [F] addi.jpg
+    [F] bancolombia.png
+    [F] cesantias.png
+    [F] comultrasan.jpg
+    [F] cuotas de financiacion.png
+    [F] fincomercio.jpg
+    [F] medios de pago.webp
+    [F] PRAMI.png
+    [F] pse.jpg
+    [F] visaymaster.jpg
+  [D] LINGUASKILL
+    [F] EXAMEN LINGUASKILL APROBADO.png
+    [F] preparacion-linguaskill.jpg
+  [D] LOGOS
+    [F] cambridge-university-press-educational-partner.jpg
+    [F] logo-smart.svg.png
+    [F] smart-logo-provisional.jpg
+  [D] OTROS
+    [D] flags
+      [F] colombia.svg
+      [F] peru.svg
+      [F] united-states.svg
+    [D] icons
+      [F] academic-content.svg
+      [F] academic-digital.svg
+      [F] academic-international.svg
+      [F] barrier-communication.svg
+      [F] barrier-confidence.svg
+      [F] barrier-lost.svg
+      [F] barrier-prepare.svg
+      [F] barrier-unclear.svg
+      [F] employment-frequent.svg
+      [F] employment-not-yet.svg
+      [F] employment-opportunity.svg
+      [F] employment-sometimes.svg
+      [F] goal-ascend.svg
+      [F] goal-global.svg
+      [F] goal-income.svg
+      [F] goal-job.svg
+      [F] goal-other.svg
+      [F] goal-profile.svg
+      [F] institution-presence.svg
+      [F] institution-students.svg
+      [F] institution-world.svg
+      [F] profile-business.svg
+      [F] profile-opportunity.svg
+      [F] profile-personal.svg
+      [F] profile-study.svg
+      [F] profile-work.svg
+    [D] maps
+      [F] colombia-data.js
+      [F] colombia.geo.json
+      [F] countries-data.js
+      [F] countries.geo.json
+      [F] peru.geo.json
+      [F] united-states.geo.json
+  [D] PLATAFORMA
+    [F] autoestudio-plataforma.webp
+    [F] plataforma-autoestudio-oficial.png
+  [D] PORTAFOLIOS
+    [F] page-01.jpg
+    [F] page-02.jpg
+    [F] page-03.jpg
+    [F] page-04.jpg
+    [F] page-05.jpg
+    [F] page-06.jpg
+    [F] page-07.jpg
+    [F] page-08.jpg
+    [F] page-09.jpg
+    [F] page-10.jpg
+    [F] page-11.jpg
+    [F] page-12.jpg
+    [F] page-13.jpg
+    [F] page-14.jpg
+  [D] SMART_FLEX
+    [F] autoestudio-plataforma.webp
+    [F] clases-120-minutos.jpg
+    [F] clases-en-vivo-smart-flex.webp
+    [F] constancia-asistencia.webp
+    [F] contenido-cambridge-english.webp
+    [F] EXAMEN LINGUASKILL APROBADO.png
+    [F] grupos-maximo-8.png
+    [F] plataforma-autoestudio-oficial.png
+    [F] preparacion-linguaskill.jpg
+    [F] SMART ZONE(1).png
+    [F] smartzone-practica.webp
+  [D] SMART_ONLINE
+    [F] page-01.jpg
+    [F] page-02.jpg
+    [F] page-03.jpg
+    [F] page-04.jpg
+    [F] page-05.jpg
+    [F] page-06.jpg
+    [F] page-07.jpg
+    [F] page-08.jpg
+    [F] page-09.jpg
+    [F] page-10.jpg
+    [F] page-11.jpg
+    [F] page-12.jpg
+    [F] page-13.jpg
+    [F] page-14.jpg
+  [D] SMART_ZONE
+    [F] SMART ZONE(1).png
+    [F] smartzone-practica.webp
+[D] 03_DATOS_Y_REGLAS_COMERCIALES
+  [F] configuracion-comercial.js
+  [F] motor-comercial.js
+  [F] plan-pagos.js
+  [F] products.js
+  [F] recommendation-rules.js
+  [F] REGLAS_COMERCIALES.md
+  [F] Tarifas Smart Flex - 2026 - MP.xlsx
+  [F] Tarifas Smart Flex - 2026 - Score.xlsx
+  [F] Tarifas Smart Online.xlsx
+  [F] tarifas.js
+[D] 04_DOCUMENTACION_TECNICA
+  [F] AGENTS.md
+  [F] ANALISIS_TARIFAS.md
+  [F] ARQUITECTURA_SISTEMA.md
+  [F] ARQUITECTURA.md
+  [F] COMMERCIAL_ENGINE.md
+  [F] PDF_DESIGN_SPEC.md
+  [F] PRD.md
+  [F] PRODUCT_DECISIONS.md
+  [F] README_SMART_SALES_EXPERIENCE.md
+  [F] README.md
+  [F] REPORTE_VALIDACION.md
+  [F] SMART_SALES_ASSISTANT_UI.md
+  [F] UX_DESIGN_SPEC.md
+  [F] WIREFRAMES.md
+[D] 05_DOCUMENTACION_FUNCIONAL
+  [F] FLUJO_FUNCIONAL.md
+  [F] PRODUCTOS.md
+[D] 06_FUENTES_OFICIALES
+  [D] PIEZAS_Y_FORMAS_DE_PAGO
+    [F] medios de pago.webp
+  [D] PORTAFOLIOS_Y_CERTIFICACIONES
+    [F] CERTIFICATE SFSO.pdf
+    [F] Portafolio Smart Online (1).pdf
+  [F] Tarifas Smart Flex - 2026 - MP.xlsx
+  [F] Tarifas Smart Flex - 2026 - Score.xlsx
+  [F] Tarifas Smart Online.xlsx
+[D] 07_CONFIGURACION_DEPLOY
+  [F] .vercelignore
+  [F] DEPLOY_ACTUAL.md
+  [F] project-identification.json
+  [F] vercel.json
+[D] 08_QA_Y_VALIDACIONES
+  [F] QA_FINAL.md
+  [F] REPORTE_VALIDACION.md
+  [F] validar_deployment_raiz.py
+  [F] validar_mvp.py
+  [F] validar_plan_pagos.js
+  [F] validar_propuesta.py
+  [F] validar_sales_hub.js
+[D] 09_RESPALDO_ORIGINALES
+  [D] ORIGINALES_NO_MODIFICAR
+    [F] Tarifas Smart Flex - 2026 - MP.xlsx
+    [F] Tarifas Smart Flex - 2026 - Score.xlsx
+    [F] Tarifas Smart Online.xlsx
+[D] 10_GUIA_IT
+  [F] DEPENDENCIAS.md
+  [F] GOOGLE_SITE_PUBLICACION.md
+  [F] INSTALACION_LOCAL.md
+  [F] MAPA_FUNCIONAL.md
+  [F] PUBLICACION.md
+  [F] README_IT.md
+[D] 11_MAPA_DE_ARCHIVOS
+  [F] ESTRUCTURA_COMPLETA.txt
+  [F] MANIFIESTO_ENTREGA_IT.txt
+[D] 12_ENTREGA_EJECUTABLE
+  [F] .vercelignore
+  [D] SMART_SALES_EXPERIENCE
+    [D] assets
+      [D] certification-model
+        [F] page-1.jpg
+        [F] page-2.jpg
+        [F] page-3.jpg
+        [F] page-4.jpg
+        [F] page-5.jpg
+        [F] page-6.jpg
+      [D] flags
+        [F] colombia.svg
+        [F] peru.svg
+        [F] united-states.svg
+      [D] icons
+        [F] academic-content.svg
+        [F] academic-digital.svg
+        [F] academic-international.svg
+        [F] barrier-communication.svg
+        [F] barrier-confidence.svg
+        [F] barrier-lost.svg
+        [F] barrier-prepare.svg
+        [F] barrier-unclear.svg
+        [F] employment-frequent.svg
+        [F] employment-not-yet.svg
+        [F] employment-opportunity.svg
+        [F] employment-sometimes.svg
+        [F] goal-ascend.svg
+        [F] goal-global.svg
+        [F] goal-income.svg
+        [F] goal-job.svg
+        [F] goal-other.svg
+        [F] goal-profile.svg
+        [F] institution-presence.svg
+        [F] institution-students.svg
+        [F] institution-world.svg
+        [F] profile-business.svg
+        [F] profile-opportunity.svg
+        [F] profile-personal.svg
+        [F] profile-study.svg
+        [F] profile-work.svg
+      [D] images
+        [D] executives
+          [F] ALISON ALDANA GARCIA.jpg
+          [F] ANGIE STHEFANY BRICEÑO GONZALEZ.jpg
+          [F] BRIGETH SAMANTA VARON ORTIZ.jpg
+          [F] CLAUDIA LILIANA GONZALEZ LOPEZ.jpg
+          [F] CRISTIAN JAVIER GARCIA BARRETO.jpg
+          [F] DANIEL ESTEBAN GALINDO FANDIÑO.jpg
+          [F] ERICK JOHAN ROCHA BENITEZ.jpg
+          [F] FLOR VIVIANA CASTAÑEDA LOZADA.jpg
+          [F] GERMAN ANDRES SIERRA ORTIZ.jpg
+          [F] GIAN FRANCO CHINOME CALVO.jpg
+          [F] IVETTE TATIANA NIETO ARENAS.jpg
+          [F] JHON ALEXANDER AVILA QUIROGA.jpg
+          [F] JUAN SEBASTIAN ROMERO LONDOÑO.png
+          [F] Juliana Carolina Rodriguez Moncaleano.jpg
+          [F] LAURA SOFIA DAZA ZEA.jpg
+          [F] NICOLLE YURANI MURCIA AVILA.jpg
+          [F] PAOLA ANDREA RESTREPO TORRES.jpg
+        [D] flex-benefits
+          [F] autoestudio-plataforma.webp
+          [F] clases-120-minutos.jpg
+          [F] clases-en-vivo-smart-flex.webp
+          [F] constancia-asistencia.webp
+          [F] contenido-cambridge-english.webp
+          [F] EXAMEN LINGUASKILL APROBADO.png
+          [F] grupos-maximo-8.png
+          [F] plataforma-autoestudio-oficial.png
+          [F] preparacion-linguaskill.jpg
+          [F] SMART ZONE(1).png
+          [F] smartzone-practica.webp
+        [F] smart-acompanamiento-online-01.webp
+        [F] smart-cambridge-interchange.webp
+        [F] smart-estudiantes-online-01.webp
+        [F] smart-sede-exterior-01.webp
+        [F] smart-sede-exterior-02.webp
+        [F] smart-sede-interior-01.jpg
+        [F] smart-sede-interior-02.webp
+        [F] smart-sede-recepcion-01.webp
+        [F] smart-sede-recepcion-02.webp
+        [F] team-smart-docentes.webp
+      [D] logos
+        [F] cambridge-university-press-educational-partner.jpg
+        [F] smart-logo-provisional.jpg
+      [D] maps
+        [F] colombia-data.js
+        [F] colombia.geo.json
+        [F] countries-data.js
+        [F] countries.geo.json
+        [F] peru.geo.json
+        [F] united-states.geo.json
+      [D] payment-options
+        [F] addi.jpg
+        [F] bancolombia.png
+        [F] cesantias.png
+        [F] comultrasan.jpg
+        [F] cuotas de financiacion.png
+        [F] fincomercio.jpg
+        [F] PRAMI.png
+        [F] pse.jpg
+        [F] visaymaster.jpg
+      [D] smart-online
+        [F] page-01.jpg
+        [F] page-02.jpg
+        [F] page-03.jpg
+        [F] page-04.jpg
+        [F] page-05.jpg
+        [F] page-06.jpg
+        [F] page-07.jpg
+        [F] page-08.jpg
+        [F] page-09.jpg
+        [F] page-10.jpg
+        [F] page-11.jpg
+        [F] page-12.jpg
+        [F] page-13.jpg
+        [F] page-14.jpg
+      [D] video
+    [D] css
+      [F] base.css
+      [F] components.css
+      [F] consolidation.css
+      [F] employment.css
+      [F] experience.css
+      [F] phase02-adjustments.css
+      [F] recommendation.css
+      [F] responsive.css
+      [F] summary.css
+      [F] variables.css
+    [D] data
+      [F] discovery.js
+      [F] employment-discovery.js
+      [F] executives.js
+      [F] institution.js
+      [F] locations.js
+      [F] products.js
+      [F] recommendation-rules.js
+      [F] smart-locations.js
+    [F] index.html
+    [D] js
+      [F] app.js
+      [F] certification-model.js
+      [F] employment.js
+      [F] integration.js
+      [F] navigation.js
+      [F] quick-navigation.js
+      [F] recommendation.js
+      [F] session.js
+      [F] state.js
+      [F] summary.js
+    [D] modules
+      [D] discovery
+      [D] enrollment
+      [D] executive
+      [D] institution
+      [D] investment
+      [D] preclose
+      [D] products
+      [D] recommendation
+      [D] welcome
+    [F] README.md
+    [F] summary.html
+    [D] vendor
+      [D] maplibre-gl
+        [F] maplibre-gl.css
+        [F] maplibre-gl.js
+      [D] smart-sales-engine
+        [F] README.md
+  [D] SMART_SALES_HUB_PRODUCCION_FINAL
+    [D] css
+      [F] estilos.css
+      [F] experience-bridge.css
+      [F] impresion.css
+      [F] propuesta-unificada.css
+      [F] propuesta.css
+    [F] index.html
+    [D] js
+      [F] aplicacion.js
+      [F] config.js
+      [F] configuracion-comercial.js
+      [F] experience-bridge.js
+      [F] motor-comercial.js
+      [F] plan-pagos.js
+      [F] print.js
+      [F] propuesta.js
+      [F] tarifas.js
+      [F] validaciones.js
+    [F] logo-smart.svg.png
+    [F] print.html
+  [F] vercel.json
+[F] LEER_PRIMERO_IT.txt
