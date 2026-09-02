@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Smart Sales Hub</title>
+  <meta name="description" content="Plataforma Comercial Inteligente de Academia de Idiomas Smart.">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/propuesta.css">
+  <link rel="stylesheet" href="css/propuesta-unificada.css">
+  <link rel="stylesheet" href="css/impresion.css">
+  <link rel="stylesheet" href="css/experience-bridge.css">
+</head>
+<body>
+  <a class="salto-contenido" href="#contenido-principal">Ir al contenido principal</a>
+
+  <header class="barra-app">
+    <a class="marca-app" href="#" id="ir-inicio" aria-label="Ir al inicio de Smart Sales Hub">
+      <img class="marca-app__logo" src="logo-smart.svg.png" alt="Academia de Idiomas Smart - Understand the world">
+      <span><strong>SMART SALES HUB</strong><small>Plataforma Comercial Inteligente</small></span>
+    </a>
+    <div class="barra-app__acciones">
+      <span class="estado-local"><span aria-hidden="true"></span>Disponible sin conexión</span>
+      <button class="boton-icono" id="nueva-cotizacion-global" type="button" aria-label="Crear una nueva propuesta" title="Nueva propuesta">+</button>
+    </div>
+  </header>
+
+  <main id="contenido-principal">
+    <section class="vista vista--dashboard" id="vista-dashboard" aria-labelledby="dashboard-titulo">
+      <div class="dashboard-cabecera">
+        <div>
+          <p class="eyebrow">Centro de trabajo comercial</p>
+          <h1 id="dashboard-titulo">SMART SALES HUB</h1>
+          <p>Todo lo necesario para preparar una propuesta oficial, clara y consistente.</p>
+        </div>
+        <button class="boton-principal boton-principal--grande" type="button" data-accion-dashboard="nueva">
+          <span aria-hidden="true">＋</span>Nueva Propuesta Comercial
+        </button>
+      </div>
+
+      <article class="campana-destacada" id="campana-destacada" aria-labelledby="campana-titulo">
+        <div class="campana-destacada__icono" aria-hidden="true">◎</div>
+        <div>
+          <p class="eyebrow">Campaña vigente</p>
+          <h2 id="campana-titulo">Sin campaña activa</h2>
+          <p id="campana-descripcion">Cuando exista una campaña aprobada aparecerá aquí automáticamente.</p>
+        </div>
+        <span class="badge badge--neutral" id="campana-estado">Sin configurar</span>
+      </article>
+
+      <section class="modulos" aria-labelledby="modulos-titulo">
+        <div class="seccion-titulo"><div><p class="eyebrow">Accesos</p><h2 id="modulos-titulo">Herramientas comerciales</h2></div></div>
+        <div class="modulos-grid">
+          <button class="modulo modulo--principal" type="button" data-accion-dashboard="nueva"><span class="modulo__icono" aria-hidden="true">＋</span><span><strong>Nueva Propuesta Comercial</strong><small>Construye una propuesta oficial paso a paso.</small></span><span aria-hidden="true">→</span></button>
+          <button class="modulo modulo--proximamente" type="button" disabled aria-disabled="true"><span class="modulo__icono" aria-hidden="true">⌕</span><span><strong>Buscar Propuesta</strong><small>Próximamente</small></span><span class="modulo__estado">No disponible</span></button>
+          <button class="modulo" type="button" data-accion-dashboard="campana"><span class="modulo__icono" aria-hidden="true">◎</span><span><strong>Campaña Vigente</strong><small>Revisa la campaña comercial configurada.</small></span><span aria-hidden="true">→</span></button>
+          <button class="modulo" type="button" data-accion-dashboard="beneficios"><span class="modulo__icono" aria-hidden="true">◇</span><span><strong>Beneficios Comerciales</strong><small>Conoce los activos aprobados y disponibles.</small></span><span aria-hidden="true">→</span></button>
+          <button class="modulo" type="button" data-accion-dashboard="tarifas"><span class="modulo__icono" aria-hidden="true">$</span><span><strong>Tarifas Oficiales</strong><small>Accede al asistente con el catálogo local.</small></span><span aria-hidden="true">→</span></button>
+          <button class="modulo modulo--proximamente" type="button" disabled aria-disabled="true"><span class="modulo__icono" aria-hidden="true">▤</span><span><strong>Biblioteca Comercial</strong><small>Próximamente</small></span><span class="modulo__estado">No disponible</span></button>
+        </div>
+      </section>
+    </section>
+
+    <section class="vista vista--asistente" id="vista-asistente" hidden aria-labelledby="asistente-titulo">
+      <div class="asistente-cabecera">
+        <div>
+          <button class="enlace-regreso" id="volver-dashboard" type="button">← Volver al inicio</button>
+          <p class="eyebrow">Nueva propuesta comercial</p>
+          <h1 id="asistente-titulo">Construye la propuesta paso a paso</h1>
+        </div>
+        <button class="boton-secundario" id="reiniciar" type="button">Reiniciar</button>
+      </div>
+
+      <div class="progreso-wizard" aria-label="Progreso de la propuesta">
+        <div class="progreso-wizard__meta"><strong id="progreso-paso">Paso 1</strong><span id="progreso-etiqueta">Línea de estudio</span></div>
+        <div class="progreso-wizard__barra" id="progreso-barra" role="progressbar" aria-valuemin="1" aria-valuemax="1" aria-valuenow="1"><span id="progreso-avance"></span></div>
+        <ol class="progreso-wizard__pasos" id="progreso-pasos" aria-label="Etapas"></ol>
+      </div>
+
+      <div class="asistente-layout">
+        <section class="wizard" aria-live="polite">
+          <div id="paso-anterior" class="paso-anterior" hidden></div>
+          <section class="paso-actual" id="paso-actual" tabindex="-1" aria-labelledby="paso-titulo">
+            <p class="eyebrow" id="paso-kicker">Comencemos</p>
+            <h2 id="paso-titulo">Selecciona la línea de estudio</h2>
+            <p class="paso-descripcion" id="paso-descripcion">Elige el programa que necesita el cliente.</p>
+            <div class="opciones-grid" id="opciones-paso"></div>
+            <div id="contenido-paso"></div>
+            <p class="mensaje-paso" id="mensaje-paso" role="status" aria-live="polite"></p>
+            <div class="acciones-paso" id="acciones-paso"></div>
+          </section>
+        </section>
+
+        <aside class="resumen-hub" aria-labelledby="resumen-titulo">
+          <header class="resumen-hub__cabecera">
+            <div><p class="eyebrow eyebrow--claro">Resumen en tiempo real</p><h2 id="resumen-titulo">Tu propuesta</h2></div>
+            <span class="badge" id="resumen-estado">En proceso</span>
+          </header>
+          <section class="resumen-bloque resumen-bloque--programa" aria-labelledby="resumen-programa-titulo"><h3 id="resumen-programa-titulo">Programa</h3><dl id="resumen-programa"></dl></section>
+          <section class="resumen-bloque resumen-bloque--inversion" aria-labelledby="resumen-inversion-titulo"><h3 id="resumen-inversion-titulo">Inversión</h3><dl id="resumen-inversion"></dl><div class="resumen-total"><span>Valor final</span><strong id="resumen-total">—</strong></div></section>
+          <section class="resumen-bloque resumen-bloque--beneficios" aria-labelledby="resumen-beneficios-titulo"><h3 id="resumen-beneficios-titulo">Beneficios</h3><div id="resumen-beneficios" class="resumen-vacio">Sin beneficios seleccionados</div></section>
+          <section class="resumen-bloque" id="resumen-pagos-seccion" hidden aria-labelledby="resumen-pagos-titulo"><h3 id="resumen-pagos-titulo">Plan de pagos</h3><div id="resumen-pagos"></div></section>
+        </aside>
+      </div>
+    </section>
+
+    <section class="vista vista--informacion" id="vista-informacion" hidden aria-labelledby="informacion-titulo">
+      <button class="enlace-regreso" id="cerrar-informacion" type="button">← Volver al inicio</button>
+      <div class="informacion-card"><span class="informacion-card__icono" id="informacion-icono" aria-hidden="true">i</span><p class="eyebrow" id="informacion-kicker">Información</p><h1 id="informacion-titulo">Módulo comercial</h1><p id="informacion-texto"></p><div id="informacion-detalle"></div><button class="boton-principal" id="informacion-accion" type="button" hidden>Nueva Propuesta Comercial</button></div>
+    </section>
+  </main>
+
+  <dialog class="confirmacion-dialog" id="confirmacion-dialog" aria-labelledby="confirmacion-titulo"><form method="dialog"><span class="confirmacion-dialog__icono" aria-hidden="true">↻</span><h2 id="confirmacion-titulo">¿Reiniciar la propuesta?</h2><p>Se limpiarán las selecciones actuales.</p><div><button class="boton-secundario" value="cancel">Conservar propuesta</button><button class="boton-principal" id="confirmar-reinicio" value="confirm">Reiniciar</button></div></form></dialog>
+
+  <dialog class="propuesta-dialog" id="propuesta-dialog" aria-labelledby="titulo-vista-previa">
+    <div class="propuesta-shell">
+      <header class="propuesta-toolbar"><div><p class="eyebrow">Propuesta comercial</p><h2 id="titulo-vista-previa">Vista previa</h2></div><div class="propuesta-toolbar__acciones"><button type="button" class="boton-secundario" id="cerrar-propuesta">Volver a editar</button><button type="button" class="boton-principal" id="imprimir-propuesta" data-action="imprimir-propuesta">Imprimir o guardar como PDF</button></div></header>
+      <div class="propuesta-workspace">
+        <aside class="propuesta-datos" aria-labelledby="titulo-datos-propuesta"><h3 id="titulo-datos-propuesta">Personaliza tu propuesta</h3><form id="formulario-propuesta"><label for="cliente-nombre">Nombre del cliente</label><input id="cliente-nombre" name="clienteNombre" autocomplete="name"><label for="asesor-nombre">Nombre del Ejecutivo de Cuenta</label><input id="asesor-nombre" name="asesorNombre" autocomplete="name"><label for="asesor-whatsapp">WhatsApp / celular</label><input id="asesor-whatsapp" name="asesorWhatsapp" autocomplete="tel" inputmode="tel"></form></aside>
+        <div class="propuesta-preview" id="propuesta-preview">
+          <article class="propuesta-pagina propuesta-pagina--comercial propuesta-pagina--seleccionada" data-pagina="1" aria-label="Propuesta comercial de una página"><header class="documento-encabezado"><div class="documento-marca"><img class="documento-logo" src="logo-smart.svg.png" alt="Smart Academia de Idiomas"><div class="documento-marca-fallback" hidden><strong>SMART</strong><span>Calculadora Comercial</span></div></div><div class="documento-meta"><strong>Propuesta Comercial Personalizada</strong><span id="propuesta-fecha"></span></div></header><section class="documento-bienvenida"><p class="documento-saludo">Preparada para</p><h1 id="propuesta-cliente">Nombre del cliente</h1><p class="documento-cliente-contacto" id="propuesta-contacto-cliente"></p><h2>Gracias por confiar en Smart.</h2><p>Hemos preparado esta propuesta de acuerdo con la información compartida durante tu proceso de asesoría.</p></section><section class="documento-programa"><div><span class="documento-kicker">Programa</span><h2 id="propuesta-programa">Smart</h2><p id="propuesta-plan"></p></div><dl class="documento-datos-programa" id="propuesta-datos-programa"></dl></section><section class="documento-beneficio"><span class="documento-kicker">Una experiencia pensada para avanzar</span><p id="propuesta-beneficio"></p><div class="documento-beneficios-bloque" id="propuesta-beneficios-bloque" hidden><h3>Beneficios incluidos en tu propuesta</h3><div class="documento-beneficios-seleccionados" id="propuesta-beneficios-seleccionados"></div></div></section><section class="documento-inversion"><div class="documento-inversion__detalle"><div><span>Valor de lista</span><strong id="propuesta-valor-lista"></strong></div><div><span>Descuento</span><strong id="propuesta-descuento"></strong></div><div><span>Ahorro generado</span><strong id="propuesta-ahorro"></strong></div></div><div class="documento-inversion__final"><span>Inversión final</span><strong id="propuesta-valor-final"></strong></div></section><section class="documento-pago-resumen"><div><span class="documento-kicker">Forma de pago</span><h3 id="propuesta-forma-pago"></h3></div><div class="documento-pago-resumen__datos" id="propuesta-resumen-pago"></div></section><section class="documento-plan"><div class="documento-seccion-titulo"><div><span class="documento-kicker">Información financiera</span><h2 id="propuesta-titulo-pagos">Plan de pagos</h2></div><strong id="propuesta-total-control"></strong></div><div class="documento-pagos documento-pagos--resumen" id="propuesta-pagos"></div></section><section class="documento-detalles"><h2>Detalles de la propuesta</h2><dl id="propuesta-detalles"></dl></section><section class="documento-notas"><h2>Notas importantes</h2><p>Esta propuesta es de carácter comercial e informativo. No constituye factura ni contrato.</p><p>Las fechas están sujetas a las condiciones comerciales y contractuales vigentes.</p></section><footer class="documento-cierre"><p>Si tienes alguna inquietud sobre esta propuesta, tu asesor estará disponible para acompañarte en el siguiente paso de tu proceso de matrícula.</p><div class="documento-asesor"><strong id="propuesta-asesor">Tu asesor Smart</strong><span id="propuesta-contacto-asesor"></span></div></footer><div class="documento-pie"><span>Propuesta comercial</span><span id="propuesta-referencia-pie"></span></div></article>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <noscript><div class="sin-script">Esta herramienta necesita JavaScript habilitado para consultar las tarifas locales.</div></noscript>
+
+  <script src="js/tarifas.js"></script>
+  <script src="js/validaciones.js"></script>
+  <script src="js/plan-pagos.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/configuracion-comercial.js"></script>
+  <script src="js/motor-comercial.js"></script>
+  <script src="js/propuesta.js"></script>
+  <script src="js/aplicacion.js"></script>
+  <script src="js/experience-bridge.js"></script>
+</body>
+</html>
