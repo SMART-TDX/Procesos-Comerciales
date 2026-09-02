@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/SMART_SALES_EXPERIENCE/index.html",
+      "permanent": false
+    }
+  ]
+}
