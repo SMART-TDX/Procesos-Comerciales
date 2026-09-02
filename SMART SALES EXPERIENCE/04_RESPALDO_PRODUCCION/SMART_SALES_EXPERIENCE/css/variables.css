@@ -1,0 +1,29 @@
+:root {
+  /* Paleta temporal: sustituir únicamente cuando se aprueben colores institucionales oficiales. */
+  --smart-primary: #b1112a;
+  --smart-primary-deep: #750b1c;
+  --smart-red: #c21130;
+  --smart-deep-red: #860d25;
+  --smart-burgundy: #5d0b20;
+  --smart-wine: #350914;
+  --smart-cream: #f7f2ea;
+  --smart-white: #ffffff;
+  --smart-charcoal: #151821;
+  --smart-gold-accent: #d7b16b;
+  --smart-secondary: #161821;
+  --smart-accent: #d5aa62;
+  --smart-background: #f4f1ec;
+  --smart-surface: #ffffff;
+  --smart-surface-soft: #f9f7f3;
+  --smart-text: #17181d;
+  --smart-text-soft: #60616a;
+  --smart-border: rgba(23, 24, 29, 0.12);
+  --smart-success: #26765b;
+  --smart-warning: #8a641d;
+  --smart-shadow: 0 28px 80px rgba(30, 22, 25, 0.14);
+  --smart-radius-lg: 2rem;
+  --smart-radius-md: 1.25rem;
+  --smart-radius-sm: 0.8rem;
+  --smart-max-width: 1180px;
+  --smart-transition: 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
