@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>JORGE 360 LAB — Asistente Personal de Telemercadeo</title>
+  <link rel="stylesheet" href="assets/css/jorge-lab.css?v=1.2.0">
+</head>
+<body>
+  <main class="lab-shell">
+    <header class="lab-header">
+      <div>
+        <span class="lab-badge">ENTORNO LOCAL · NO PRODUCTIVO</span>
+        <h1>JORGE 360</h1>
+        <p>Asistente Personal de Telemercadeo Smart</p>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+        <a href="index.html#tmk-asistente" style="display:inline-flex;align-items:center;padding:12px 18px;border:1px solid rgba(255,255,255,.4);border-radius:12px;background:rgba(255,255,255,.14);color:#fff;font-weight:750;text-decoration:none;white-space:nowrap">← Volver a Telemercadeo</a>
+        <button id="newCase" class="secondary" type="button">Nuevo caso</button>
+      </div>
+    </header>
+
+    <section class="input-panel" aria-labelledby="clientLabel">
+      <label id="clientLabel" for="clientText">¿EN QUÉ TE AYUDO?</label>
+      <textarea id="clientText" rows="4" placeholder="Ejemplo: me dice que vive en Suba, trabaja en Chapinero y quiere estudiar inglés presencial..."></textarea>
+      <p class="input-help">Escríbelo como lo dirías durante la llamada.</p>
+      <div class="quick-access" aria-label="Accesos rápidos">
+        <button type="button" data-module="objections">🎯 Objeciones</button>
+        <button type="button" data-module="products">📚 Productos</button>
+        <button type="button" data-module="locations">📍 Sedes</button>
+        <button type="button" data-module="exams">🎓 Exámenes</button>
+        <button type="button" data-module="processes">📋 Procesos</button>
+        <button type="button" data-module="compliance">🛡️ Protocolos</button>
+        <a class="quick-access-link" href="https://docs.google.com/spreadsheets/d/1TkFVb4rFPQuAQWs9edL74G7elalLSNjQ/edit?gid=1260043281#gid=1260043281" target="_blank" rel="noopener noreferrer">🤝 ALIANZAS Y CONVENIOS EMPRESARIALES SMART ↗</a>
+      </div>
+      <div class="actions">
+        <button id="analyze" type="button">Analizar turno</button>
+        <span id="turnCount" aria-live="polite">Caso nuevo · 0 turnos</span>
+      </div>
+    </section>
+
+    <section id="moduleView" class="module-view" hidden>
+      <div class="module-toolbar"><button id="moduleBack" class="module-back" type="button">← Regresar</button><h2 id="moduleTitle"></h2></div>
+      <div id="moduleContent"></div>
+    </section>
+
+    <section id="emptyState" class="empty-state">
+      <h2>Hola, soy Jorge.</h2>
+      <p>Puedo ayudarte con conversaciones comerciales, productos, sedes, exámenes, procesos y protocolos. Los siguientes turnos conservarán la memoria del caso.</p>
+    </section>
+
+    <section id="result" class="result-grid" hidden>
+      <article class="result-card primary-card">
+        <span class="eyebrow">CAPACIDAD PRINCIPAL</span>
+        <h2 id="situationType">—</h2>
+        <div class="chip-row" id="families"></div>
+      </article>
+
+      <div id="adaptiveResponse" class="adaptive-response"></div>
+      <article class="result-card wide details-card"><details><summary>Ver más</summary><div id="details"></div><h3>Fuentes utilizadas</h3><ul id="sources"></ul></details></article>
+
+      <article class="result-card wide memory-card">
+        <details>
+          <summary>Memoria del caso</summary>
+          <pre id="memory"></pre>
+        </details>
+      </article>
+
+      <article class="result-card wide history-card">
+        <h3>Conversación del caso</h3>
+        <ol id="history"></ol>
+      </article>
+    </section>
+  </main>
+
+  <script src="knowledge/jorge-knowledge-base.js"></script>
+  <script src="assets/js/jorge-tmk-input-normalizer.js"></script>
+  <script src="assets/js/jorge-commercial-bank.js"></script>
+  <script src="assets/js/jorge-commercial-engine.js"></script>
+  <script src="assets/js/jorge-knowledge-bank-core.js"></script>
+  <script src="assets/js/jorge-master-excel-bank.js"></script>
+  <script src="assets/js/jorge-objections-manual-bank.js"></script>
+  <script src="assets/js/jorge-products-locations-lab-bank.js?v=1.1.0"></script>
+  <script src="assets/js/jorge-products-bank.js"></script>
+  <script src="assets/js/jorge-locations-bank.js"></script>
+  <script src="assets/js/jorge-exams-bank.js"></script>
+  <script src="assets/js/jorge-process-bank.js"></script>
+  <script src="assets/js/jorge-compliance-bank.js"></script>
+  <script src="assets/js/jorge-institutional-bank.js"></script>
+  <script src="assets/js/jorge-360-router.js"></script>
+  <script src="assets/js/jorge-360-engine.js"></script>
+  <script src="assets/js/jorge-lab.js?v=1.1.0"></script>
+</body>
+</html>
