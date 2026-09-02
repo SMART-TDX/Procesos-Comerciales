@@ -1,0 +1,38 @@
+SMART SALES EXPERIENCE
+ENTREGA TÉCNICA FINAL PARA IT
+ACADEMIA DE IDIOMAS SMART
+
+ESTADO: paquete técnico institucional consolidado. No publicado por esta tarea.
+
+Contenido principal:
+- Código completo: 01_CODIGO_PRODUCCION
+- Assets clasificados: 02_ASSETS
+- Datos y reglas comerciales: 03_DATOS_Y_REGLAS_COMERCIALES
+- Documentación técnica: 04_DOCUMENTACION_TECNICA
+- Documentación funcional: 05_DOCUMENTACION_FUNCIONAL
+- Fuentes oficiales: 06_FUENTES_OFICIALES
+- Configuración de publicación: 07_CONFIGURACION_DEPLOY
+- QA y validadores: 08_QA_Y_VALIDACIONES
+- Respaldo de originales: 09_RESPALDO_ORIGINALES
+- Guía para IT: 10_GUIA_IT
+- Mapa y manifiesto: 11_MAPA_DE_ARCHIVOS
+- Paquete mínimo ejecutable: 12_ENTREGA_EJECUTABLE
+
+Inicio local de la experiencia:
+12_ENTREGA_EJECUTABLE\SMART_SALES_EXPERIENCE\index.html
+
+Calculadora Comercial:
+12_ENTREGA_EJECUTABLE\SMART_SALES_HUB_PRODUCCION_FINAL\index.html
+
+Producción de referencia:
+Proyecto Vercel: smart-sales-hub
+Dominio: https://smart-sales-hub.vercel.app
+
+Primera revisión recomendada:
+1. Leer 10_GUIA_IT\README_IT.md.
+2. Leer 04_DOCUMENTACION_TECNICA\ARQUITECTURA_SISTEMA.md.
+3. Revisar 03_DATOS_Y_REGLAS_COMERCIALES\REGLAS_COMERCIALES.md.
+4. Verificar 11_MAPA_DE_ARCHIVOS\MANIFIESTO_ENTREGA_IT.txt.
+
+No modificar tarifas, planes, reglas ni fuentes oficiales sin validación comercial formal.
+Esta entrega no contiene contraseñas, tokens OAuth, cookies ni claves secretas.
