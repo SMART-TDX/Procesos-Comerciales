@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Centro de Calculadoras Comerciales SMART. Accede a las herramientas de cotización de Instituto, Smart Online / Flex y Smart Mix.">
+  <meta name="color-scheme" content="light">
+  <title>Centro de Calculadoras Comerciales SMART · V2.2 en revisión</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#soluciones">Saltar a las calculadoras</a>
+  <header class="site-header">
+    <div class="header-inner container">
+      <div class="brand">
+        <img class="brand-logo" src="assets/logos/logo-smart-blanco.png" width="4167" height="2917" alt="SMART Academia de Idiomas — Understand the world">
+        <p class="ecosystem-name"><strong>Herramientas Comerciales</strong></p>
+      </div>
+      <div class="header-meta"><span class="internal-label">Uso interno comercial</span><span class="review-badge">En revisión</span></div>
+    </div>
+  </header>
+
+  <main id="contenido">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-inner container">
+      <div class="hero-copy">
+        <h1 id="page-title">Centro de Calculadoras<br><span>Comerciales SMART</span></h1>
+        <p class="hero-description"><strong>Selecciona la solución que deseas cotizar</strong> y construye una propuesta <strong>clara, ágil y personalizada.</strong></p>
+      </div>
+      <div class="hero-aside"><div class="solution-count" aria-hidden="true"><span>03</span><p>Soluciones.<br>Un ecosistema.</p></div><p class="hero-support">Todo el ecosistema comercial SMART, <strong>en un solo lugar.</strong></p></div>
+      </div>
+    </section>
+
+    <section class="solutions container" id="soluciones" tabindex="-1" aria-labelledby="solutions-title">
+      <div class="section-heading"><h2 id="solutions-title">¿Qué solución deseas cotizar?</h2><span>Selecciona tu calculadora <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14m-5-5 5 5 5-5"/></svg></span></div>
+      <div class="cards">
+        <article class="solution-card" aria-labelledby="instituto-title">
+          <div class="card-top">
+            <span class="modality">Presencial</span><span class="module-number" aria-hidden="true">01</span>
+          </div>
+          <h3 id="instituto-title">Instituto</h3>
+          <p class="card-concept">Experiencia presencial SMART.</p>
+          <!-- Fotografía generada para el portal; recurso local reemplazable. -->
+          <div class="card-media"><img src="assets/images/instituto-presencial.webp" width="1280" height="720" alt="Docente conversando con tres estudiantes adultos alrededor de una mesa con cuadernos en un aula." loading="lazy" decoding="async"></div>
+          <p class="card-description">Programas presenciales con diferentes alternativas comerciales, planes de pago y beneficios.</p>
+          <ul class="attributes"><li>Inglés y francés</li><li>Formación presencial</li><li>Planes y alternativas comerciales</li></ul>
+          <div class="card-action">
+            <a class="cta" role="button" tabindex="0" data-destination="INSTITUTO_URL" aria-describedby="instituto-status"><span>Cotizar Instituto</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
+            <p class="link-status" id="instituto-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </article>
+
+        <article class="solution-card online-card" aria-labelledby="online-title">
+          <div class="card-top">
+            <span class="modality">Virtual</span><span class="module-number" aria-hidden="true">02</span>
+          </div>
+          <h3 id="online-title">Smart Online / Flex</h3>
+          <p class="card-concept">Soluciones virtuales SMART.</p>
+          <!-- Fotografía generada para el portal; recurso local reemplazable. -->
+          <div class="card-media"><img src="assets/images/smart-online-flex-virtual.webp" width="1280" height="720" alt="Estudiante tomando notas mientras una docente imparte una clase en vivo en la pantalla de su portátil." loading="lazy" decoding="async"></div>
+          <p class="card-description">Alternativas virtuales diseñadas para adaptarse a distintas necesidades de aprendizaje.</p>
+          <ul class="attributes"><li>Aprendizaje virtual</li><li>Smart Online / Smart Flex</li><li>Propuesta personalizada</li></ul>
+          <div class="card-action">
+            <a class="cta" role="button" tabindex="0" data-destination="ONLINE_FLEX_URL" aria-describedby="online-status"><span>Cotizar Online / Flex</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
+            <p class="link-status" id="online-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </article>
+
+        <article class="solution-card mix-card" aria-labelledby="mix-title">
+          <div class="card-top">
+            <span class="modality">Presencial + virtual</span><span class="module-number" aria-hidden="true">03</span>
+          </div>
+          <h3 id="mix-title">Smart Mix</h3>
+          <p class="card-concept">Flexibilidad presencial + virtual.</p>
+          <!-- Fotografía generada para el portal; recurso local reemplazable. -->
+          <div class="card-media"><img src="assets/images/smart-mix-presencial-virtual.webp" width="1280" height="720" alt="Clase presencial con docente y estudiantes junto a una zona donde otro estudiante sigue una clase virtual en su portátil." loading="lazy" decoding="async"></div>
+          <p class="card-description">Combina clases presenciales y virtuales dentro de una misma experiencia de aprendizaje.</p>
+          <ul class="attributes"><li>Inglés · Módulos Smart Mix</li><li>Presencial + virtual</li><li>Planes flexibles</li></ul>
+          <div class="card-action">
+            <a class="cta" role="button" tabindex="0" data-destination="SMART_MIX_URL" aria-describedby="mix-status"><span>Cotizar Smart Mix</span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a>
+            <p class="link-status" id="mix-status" role="status" aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="guidance container"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9v.2"/></svg>Elige la modalidad que necesita tu estudiante para acceder a su calculadora.</p>
+    <noscript><p class="noscript-notice">Activa JavaScript para habilitar los destinos de las calculadoras. Los enlaces están pendientes de configuración.</p></noscript>
+  </main>
+  <footer class="site-footer container"><p>Ecosistema Comercial SMART</p><p>Herramientas de uso interno comercial</p></footer>
+</body>
+</html>
