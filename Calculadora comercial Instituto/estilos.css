@@ -675,6 +675,11 @@ button:disabled {
   width: min(620px, 100%);
 }
 
+.negotiation-field,
+#plazo-flexible {
+  margin-top: 16px;
+}
+
 .finance-empty-help {
   margin: 10px 0 0;
   color: var(--muted);

@@ -151,7 +151,7 @@
             </div>
           </div>
           <div class="progressive-form-status" aria-live="polite">
-            <strong id="progressive-step-indicator">Paso 1 de 6</strong>
+            <strong id="progressive-step-indicator">Paso 1 de 7</strong>
             <div id="progressive-completed-choices" class="progressive-completed-choices" aria-label="Selecciones completadas"></div>
           </div>
           <div id="progressive-program-form" class="form-grid progressive-form">
@@ -163,12 +163,16 @@
                 <option value="FRANCES">Francés</option>
               </select>
             </label>
-            <label id="progressive-field-site" class="field progressive-field" data-progressive-step="2" hidden>
-              <span>Sede</span>
-              <select id="sede" class="quote-input" required></select>
-              <small>Solo se muestran las sedes habilitadas para el idioma seleccionado.</small>
+            <label id="progressive-field-city-zone" class="field progressive-field" data-progressive-step="2" hidden>
+              <span>Ciudad / zona</span>
+              <select id="ciudad-zona" class="quote-input" required disabled></select>
             </label>
-            <label id="progressive-field-strategy" class="field progressive-field" data-progressive-step="3" hidden>
+            <label id="progressive-field-site" class="field progressive-field" data-progressive-step="3" hidden>
+              <span>Sede</span>
+              <select id="sede" class="quote-input" required disabled></select>
+              <small>Sedes habilitadas para el idioma y la ciudad / zona seleccionados.</small>
+            </label>
+            <label id="progressive-field-strategy" class="field progressive-field" data-progressive-step="4" hidden>
               <span>Plan tarifario</span>
               <select id="estrategia" class="quote-input" required></select>
               <small>Uso interno del asesor. No se muestra en la propuesta del cliente.</small>
@@ -177,15 +181,15 @@
               <span id="zone-information-label">Zona aplicada</span>
               <strong id="zone-information-value">—</strong>
             </div>
-            <label id="progressive-field-plan" class="field progressive-field" data-progressive-step="4" hidden>
+            <label id="progressive-field-plan" class="field progressive-field" data-progressive-step="5" hidden>
               <span>Programa</span>
               <select id="plan" class="quote-input"></select>
             </label>
-            <label id="progressive-field-condition" class="field progressive-field" data-progressive-step="5" hidden>
+            <label id="progressive-field-condition" class="field progressive-field" data-progressive-step="6" hidden>
               <span>Condición comercial</span>
               <select id="condicion" class="quote-input"></select>
             </label>
-            <label id="progressive-field-payment" class="field progressive-field" data-progressive-step="6" hidden>
+            <label id="progressive-field-payment" class="field progressive-field" data-progressive-step="7" hidden>
               <span>Forma de pago autorizada</span>
               <select id="numero-pagos" class="quote-input"></select>
               <small>Las alternativas provienen exclusivamente de la tarifa.</small>
@@ -201,7 +205,7 @@
             <span class="step-number">03</span>
             <div>
               <p class="panel-kicker">Configuración financiera</p>
-              <h3>Cuota inicial y mensualidad</h3>
+              <h3>Cuota inicial y capacidad de pago</h3>
             </div>
           </div>
 
@@ -221,10 +225,26 @@
               <small id="cuota-help">Ingresa el valor acordado con el cliente.</small>
             </label>
             <p id="finance-empty-help" class="finance-empty-help">Define la cuota inicial acordada para calcular las mensualidades.</p>
+            <label class="field money-field finance-proposed-field negotiation-field">
+              <span>¿Cuánto puede pagar mensualmente?</span>
+              <div class="money-input">
+                <span>$</span>
+                <input id="capacidad-mensual" class="quote-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Ingresa la capacidad indicada" aria-describedby="capacidad-ayuda validation-alert">
+              </div>
+              <small id="capacidad-ayuda">Referencia para negociar. La mensualidad del acuerdo se calcula según los pagos elegidos.</small>
+            </label>
+            <label id="plazo-flexible" class="field" hidden>
+              <span>¿En cuántos pagos quieres organizar la propuesta?</span>
+              <select id="mensualidades-propuestas" class="quote-input" disabled></select>
+              <small>Cada alternativa incluye 1 cuota inicial y las mensualidades indicadas.</small>
+            </label>
+            <p id="capacidad-recomendacion" class="finance-empty-help" role="status" hidden></p>
+            <p id="capacidad-plan-inferior" class="finance-empty-help" role="status" hidden></p>
+            <p id="plazo-advertencia" class="finance-empty-help" role="status" hidden></p>
           </div>
 
           <div id="validation-alert" class="validation-alert" role="alert" hidden></div>
-          <div id="commercial-message" class="commercial-message finance-only" hidden></div>
+          <button id="btn-confirmar-propuesta" type="button" class="button button-primary negotiation-field" hidden>Confirmar propuesta</button>
         </section>
 
         <section id="advisor-additional-section" class="panel" hidden>
@@ -268,7 +288,8 @@
             </label>
             <label class="field">
               <span>Fecha estimada de confirmación del pago inicial</span>
-              <input id="fecha-acreditacion-pago-inicial-estimada" class="quote-input" type="date">
+              <input id="fecha-acreditacion-pago-inicial-estimada" class="quote-input" type="date" aria-describedby="acreditacion-error">
+              <small id="acreditacion-error" role="alert" hidden></small>
               <small>Fecha proyectada en la que el pago inicial quedará confirmado en las cuentas de Smart.</small>
             </label>
             <label class="field finance-only">
@@ -463,7 +484,6 @@
           <span>Forma de pago</span>
           <h3>TU PLAN DE PAGO</h3>
         </div>
-        <p class="payment-method-label" data-bind="forma-pago">Pago de contado</p>
         <div class="client-payment-cards">
           <div class="client-payment-hero">
             <span data-bind="etiqueta-primer-pago">PAGO ÚNICO</span>
@@ -701,7 +721,7 @@
       <li><strong>Gráficos de fondo:</strong> Activados.</li>
     </ul>
     <p class="print-browser-warning">
-      Los encabezados del navegador —fecha, título, dirección <code>file:///</code> y número de página—
+      Los encabezados del navegador —fecha, título, dirección <code>URL</code> y número de página—
       solamente desaparecen al desactivar <strong>Encabezados y pies de página</strong>.
     </p>
     <div class="print-guidance-actions">
@@ -719,9 +739,6 @@
   <script src="configuracion_modelos_tarifarios.js"></script>
   <script src="tarifas.js"></script>
   <script src="tarifas_modelo_mp.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.14.0/html2pdf.bundle.min.js"
-    onerror="this.onerror=null;this.src='https://unpkg.com/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';"></script>
-  <script src="configuracion_registro.js"></script>
-  <script src="aplicacion.js?v=20260813-1705"></script>
+  <script src="aplicacion.js"></script>
 </body>
 </html>

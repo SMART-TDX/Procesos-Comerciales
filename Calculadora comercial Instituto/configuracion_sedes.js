@@ -2,7 +2,7 @@
 (function (global) {
   "use strict";
 
-  var FECHA_ACTUALIZACION = "2026-08-04";
+  var FECHA_ACTUALIZACION = "2026-09-10";
 
   function normalizarNombre(value) {
     return String(value || "")
@@ -28,7 +28,7 @@
       frances_habilitado: Boolean(frances),
       alias: alias || [],
       observacion: observacion || "",
-      fecha_actualizacion_disponibilidad: FECHA_ACTUALIZACION
+      fecha_actualizacion_disponibilidad: "2026-08-04"
     };
   }
 
@@ -93,6 +93,10 @@
     crearSede("REG_ARMENIA", "Armenia", "Armenia", "Quindío", "REGIONALES", "REGIONALES", false)
   ];
 
+  // Baja comercial: conservar ID, alias y atributos para referencias históricas.
+  sedes.find(function (sede) { return sede.sede_id === "ANT_SANTAFE_MEDELLIN"; }).sede_activa = false;
+  sedes.find(function (sede) { return sede.sede_id === "ANT_SANTAFE_MEDELLIN"; }).fecha_actualizacion_disponibilidad = FECHA_ACTUALIZACION;
+
   function validarConfiguracion(items) {
     var errores = [];
     var ids = new Set();
@@ -136,10 +140,10 @@
       activas: items.filter(function (sede) { return sede.sede_activa; }).length,
       cundAnt: items.filter(function (sede) { return sede.zona_tarifaria === "CUND_ANT"; }).length,
       regionales: items.filter(function (sede) { return sede.zona_tarifaria === "REGIONALES"; }).length,
-      ingles: items.filter(function (sede) { return sede.ingles_habilitado; }).length,
-      frances: items.filter(function (sede) { return sede.frances_habilitado; }).length
+      ingles: items.filter(function (sede) { return sede.sede_activa && sede.ingles_habilitado; }).length,
+      frances: items.filter(function (sede) { return sede.sede_activa && sede.frances_habilitado; }).length
     };
-    var esperados = { total: 56, activas: 56, cundAnt: 45, regionales: 11, ingles: 56, frances: 23 };
+    var esperados = { total: 56, activas: 55, cundAnt: 45, regionales: 11, ingles: 55, frances: 23 };
     Object.keys(esperados).forEach(function (key) {
       if (resumen[key] !== esperados[key]) {
         errores.push("Conteo inválido de " + key + ": esperado " + esperados[key] + ", obtenido " + resumen[key] + ".");
@@ -159,11 +163,12 @@
   });
 
   var metadata = Object.freeze({
-    version: "2026-08-04",
+    version: "2026-09-10",
     fecha_actualizacion_disponibilidad: FECHA_ACTUALIZACION,
     total_sedes: 56,
+    sedes_activas: 55,
     zonas: Object.freeze({ CUND_ANT: 45, REGIONALES: 11 }),
-    idiomas_habilitados: Object.freeze({ INGLES: 56, FRANCES: 23 })
+    idiomas_habilitados: Object.freeze({ INGLES: 55, FRANCES: 23 })
   });
 
   global.SMART_SEDES_META = metadata;

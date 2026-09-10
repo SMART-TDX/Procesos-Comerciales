@@ -2,7 +2,7 @@
 (function (global) {
   "use strict";
 
-  var FECHA_ACTUALIZACION = "2026-08-06";
+  var FECHA_ACTUALIZACION = "2026-09-09";
 
   function crearJefe(id, nombre, correo, grupo, sedesORegiones) {
     return Object.freeze({
@@ -11,7 +11,7 @@
       correo: correo,
       grupo: grupo,
       sedes_o_regiones: Object.freeze((sedesORegiones || []).slice()),
-      activo: true,
+      activo: grupo !== "SIN_ASIGNACION",
       estado_validacion: "CONFIRMADO"
     });
   }
@@ -29,7 +29,7 @@
     crearJefe("REG_CALI_ALICIA_VELASQUEZ", "Alicia Velázquez Rojas", "alicia.velasquez@smartidiomas.edu.co", "CALI", ["REG_CALI", "CALI"]),
     crearJefe("REG_IBAGUE_ELIANA_NARVAEZ", "Eliana Narváez Martínez", "enarvaez@smartidiomas.edu.co", "IBAGUE", ["REG_IBAGUE", "IBAGUE"]),
     crearJefe("REG_EJE_ENA_MAHECHA", "Ena Lucía Mahecha", "ena.mahecha@smartidiomas.edu.co", "MANIZALES", ["REG_MANIZALES", "MANIZALES"]),
-    crearJefe("REG_PEREIRA_DAVID_TAMAYO", "David Tamayo", "brayan.tamayo@smartidiomas.edu.co", "PEREIRA_ARMENIA", ["REG_PEREIRA", "REG_ARMENIA", "PEREIRA", "ARMENIA"]),
+    crearJefe("REG_PEREIRA_DAVID_TAMAYO", "David Tamayo", "brayan.tamayo@smartidiomas.edu.co", "SIN_ASIGNACION", []),
     crearJefe("ANT_JOSE_CHAVEZ", "José Reinaldo Chávez", "j.chavez@smartidiomas.edu.co", "MEDELLIN", ["MEDELLIN_ANTIOQUIA"]),
     crearJefe("ANT_EDYS_MANAURE", "Edys Leonardo Manaure Romero", "emanaure@smartidiomas.edu.co", "MEDELLIN", ["MEDELLIN_ANTIOQUIA"]),
     crearJefe("ANT_JUAN_GIL", "Juan Manuel Gil Taborda", "mtaborda@smartidiomas.edu.co", "MEDELLIN", ["MEDELLIN_ANTIOQUIA"]),
@@ -76,10 +76,14 @@
   }
 
   global.SMART_JEFES_VENTAS_META = Object.freeze({
-    version: "2026-08-06",
+    version: "2026-09-09",
     fecha_actualizacion: FECHA_ACTUALIZACION,
     total: 20
   });
   global.SMART_JEFES_VENTAS = jefes;
+  // Reutiliza la identidad existente, sin duplicar correo ni alterar Villavicencio.
+  global.SMART_JEFES_VENTAS_REGIONALES = Object.freeze({
+    PEREIRA_ARMENIA: Object.freeze({ id: "REG_VILLAVICENCIO_MIGUEL_ALFONSO", nombre: "Miguel Alfonso" })
+  });
   global.SMART_JEFES_VENTAS_VALIDACION = validarConfiguracion(jefes);
 })(typeof window !== "undefined" ? window : globalThis);

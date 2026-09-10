@@ -285,6 +285,174 @@
     return "SMART-" + map.year + map.month + map.day + "-" + map.hour + map.minute + "-" + code;
   }
 
+  function accreditationRange(now) {
+    var min = todayBogotaISO(now);
+    return { min: min, max: addDaysISO(min, 30) };
+  }
+
+  function validateAccreditationDate(value, now) {
+    var range = accreditationRange(now);
+    return Boolean(parseISODate(value) && addDaysISO(value, 0) === value && value >= range.min && value <= range.max);
+  }
+
+  function officialPaymentAlternatives(tariff, catalog) {
+    if (!tariff) { return []; }
+    var fields = ["modelo_tarifario_id", "producto_id", "idioma_id", "zona_id", "plan_id", "condicion_id", "ruta_inicio", "nivel_contratado"];
+    var source = catalog || (global.SMART_TARIFAS || []).concat(global.SMART_TARIFAS_MP || []);
+    return source.filter(function (candidate) {
+      return fields.every(function (field) { return (candidate[field] || null) === (tariff[field] || null); });
+    }).sort(function (a, b) { return a.numero_pagos - b.numero_pagos; });
+  }
+
+  function flexiblePaymentOptions(tariff, initialCop, catalog) {
+    var result = { options: [], shorterPlan: null, warning: "", comparison: "NO_ALTERNATIVE",
+      minRemainingPayments: 0, maxRemainingPayments: 0 };
+    if (!tariff || tariff.numero_pagos === 1) { return result; }
+    var shorter = officialPaymentAlternatives(tariff, catalog).filter(function (candidate) {
+      return candidate.numero_pagos < tariff.numero_pagos;
+    }).pop() || null;
+    result.shorterPlan = shorter;
+    // Las fronteras dependen solo de los pagos oficiales de la misma ruta.
+    result.minRemainingPayments = shorter ? shorter.numero_pagos : 1;
+    result.maxRemainingPayments = tariff.numero_pagos - 1;
+    if (!Number.isSafeInteger(initialCop) || initialCop < tariff.cuota_inicial_minima_cop ||
+        initialCop >= tariff.valor_total_oficial_cop) { return result; }
+    if (shorter && BigInt(initialCop) * 10n >= BigInt(shorter.valor_total_oficial_cop) * 9n) {
+      result.warning = initialCop >= shorter.valor_total_oficial_cop
+        ? "La cuota inicial propuesta cubre el valor total de una alternativa oficial de menor plazo. Revisa esa alternativa antes de continuar."
+        : "La cuota inicial propuesta alcanza el 90% del valor de una alternativa oficial de menor plazo. Conviene revisar esa alternativa.";
+    }
+    var comparable = shorter && shorter.numero_pagos > 1 && initialCop >= shorter.cuota_inicial_minima_cop && initialCop < shorter.valor_total_oficial_cop;
+    result.comparison = !shorter ? "NO_ALTERNATIVE" : shorter.numero_pagos === 1 ? "CASH" : comparable ? "COMPARABLE" : "INITIAL_NOT_APPLICABLE";
+    for (var count = result.maxRemainingPayments; count >= result.minRemainingPayments; count -= 1) {
+      result.options.push(count);
+    }
+    return result;
+  }
+
+  function salesManagerForRegion(manager, group) {
+    var override = (global.SMART_JEFES_VENTAS_REGIONALES || {})[group];
+    return Boolean(manager && manager.activo && (override ? manager.id === override.id : manager.grupo === group));
+  }
+
+  function parseCapacityInput(value) {
+    var text = String(value == null ? "" : value).trim().replace(/[$\s]/g, "");
+    if (!/^(?:\d+|\d{1,3}(?:\.\d{3})+)$/.test(text)) { return null; }
+    var number = Number(text.replace(/\./g, ""));
+    return Number.isSafeInteger(number) && number > 0 ? number : null;
+  }
+
+  function monthlyAmounts(balance, remaining) {
+    var regular = roundDivideCOP(balance, remaining);
+    var last = balance - (regular * (remaining - 1));
+    if (last < 0) {
+      regular = Math.floor(balance / remaining);
+      last = balance - (regular * (remaining - 1));
+    }
+    return { regularMonthlyCop: regular, lastMonthlyCop: last,
+      requiredCapacityCop: Math.max(regular, last) };
+  }
+
+  // Información de negociación interna. El calendario contractual sigue teniendo
+  // una única fuente en buildPaymentPlan y comparte exactamente su redondeo.
+  function paymentCapacityOptions(tariff, initialCop, capacityCop, remainingPayments, catalog) {
+    var structure = flexiblePaymentOptions(tariff, initialCop, catalog);
+    var result = { valid: false, choices: [], selected: null, recommendedPayments: null,
+      recommendedRemainingPayments: null, message: "", recommendation: "", shorterSuggestion: "",
+      capacityValid: Number.isSafeInteger(capacityCop) && capacityCop > 0, noViable: false };
+    if (!tariff) { return result; }
+    if (tariff.numero_pagos === 1) { result.valid = true; return result; }
+    if (!structure.options.length) { return result; }
+    if (!result.capacityValid) {
+      result.message = "Indica cuánto puede pagar mensualmente el cliente, en pesos enteros y mayor que $0.";
+      return result;
+    }
+    result.choices = structure.options.map(function (remaining) {
+      var amount = monthlyAmounts(tariff.valor_total_oficial_cop - initialCop, remaining);
+      return Object.assign({ remainingPayments: remaining, numberOfPayments: remaining + 1,
+        viable: amount.requiredCapacityCop <= capacityCop }, amount);
+    });
+    var viable = result.choices.filter(function (choice) { return choice.viable; });
+    var recommended = viable.length ? viable[viable.length - 1] : null;
+    if (recommended) {
+      result.recommendedPayments = recommended.numberOfPayments;
+      result.recommendedRemainingPayments = recommended.remainingPayments;
+      result.recommendation = "Con una capacidad mensual de " + formatCOP(capacityCop) +
+        ", la alternativa más corta viable dentro de esta tarifa es de " + recommended.numberOfPayments + " pagos.";
+    } else {
+      result.noViable = true;
+      var longerExists = officialPaymentAlternatives(tariff, catalog).some(function (item) { return item.numero_pagos > tariff.numero_pagos; });
+      result.recommendation = "La capacidad mensual indicada no permite estructurar esta tarifa con la cuota inicial actual. " +
+        "Aumenta la cuota inicial o revisa la capacidad mensual" + (longerExists ? "; también puedes evaluar un plan tarifario de mayor plazo." : ".");
+    }
+    var shorter = structure.shorterPlan;
+    if (shorter && initialCop >= shorter.cuota_inicial_minima_cop &&
+        (initialCop >= shorter.valor_total_oficial_cop || (shorter.numero_pagos > 1 &&
+          monthlyAmounts(shorter.valor_total_oficial_cop - initialCop, shorter.numero_pagos - 1).requiredCapacityCop <= capacityCop))) {
+      result.shorterSuggestion = "Por la capacidad de pago indicada, puede ser conveniente evaluar el plan oficial de menor plazo.";
+    }
+    result.selected = result.choices.find(function (choice) { return choice.remainingPayments === remainingPayments; }) || null;
+    if (!result.selected) {
+      result.message = "Selecciona la cantidad real de pagos o acepta la alternativa recomendada.";
+    } else if (result.selected.viable) {
+      result.valid = true;
+      result.message = "Esta alternativa se ajusta a la capacidad mensual indicada.";
+    } else {
+      result.message = "Con " + result.selected.numberOfPayments + " pagos totales (1 inicial + " + result.selected.remainingPayments + " mensualidades), " +
+        (result.selected.regularMonthlyCop > capacityCop
+          ? "la mensualidad requerida es aproximadamente " + formatCOP(result.selected.regularMonthlyCop)
+          : "la última mensualidad ajustada es " + formatCOP(result.selected.lastMonthlyCop)) +
+        ", superior a la capacidad indicada de " + formatCOP(capacityCop) +
+        ". Selecciona un plazo viable o ajusta la capacidad mensual indicada.";
+    }
+    return result;
+  }
+
+  function paymentAgreementAction(calculation, capacityCop) {
+    if (!calculation || !calculation.valid || !calculation.remainingPayments ||
+        !Number.isSafeInteger(capacityCop) || capacityCop <= 0) { return null; }
+    var required = Math.max.apply(null, calculation.rows.slice(1).map(function (row) { return row.valueCop; }));
+    return { numberOfPayments: calculation.numberOfPayments, requiredCapacityCop: required,
+      increasesCapacity: capacityCop < required,
+      label: capacityCop < required
+        ? "Aceptar hasta " + formatCOP(required) + " mensuales y confirmar " + calculation.numberOfPayments + " pagos"
+        : "Confirmar propuesta de " + calculation.numberOfPayments + " pagos" };
+  }
+
+  // Agrupaciones exclusivamente visuales. La zona tarifaria procede de la sede.
+  function siteCityZone(site) {
+    var labels = { BOGOTA_CUNDINAMARCA: "Bogotá / Cundinamarca", MEDELLIN_ANTIOQUIA: "Medellín / Antioquia", SANTANDER: "Bucaramanga / Santander" };
+    if (labels[site.grupo_operativo]) { return { id: site.grupo_operativo, label: labels[site.grupo_operativo] }; }
+    var regionalLabels = { REG_CARNAVAL: "Barranquilla", REG_GUACARI: "Guacarí" };
+    return { id: site.sede_id, label: regionalLabels[site.sede_id] || site.ciudad };
+  }
+
+  function siteDisplayName(site) {
+    return site.sede_id === "ANT_TIERRAGRO" ? "Tierragro Bello" : site.nombre_sede;
+  }
+
+  function eligibleSites(language, items) {
+    return (items || global.SMART_SEDES || []).filter(function (site) {
+      return resolveCommercialContext(language, site.sede_id, items || global.SMART_SEDES || []).valid;
+    });
+  }
+
+  function availableCityZones(language, items) {
+    var groups = new Map();
+    eligibleSites(language, items).forEach(function (site) { var group = siteCityZone(site); groups.set(group.id, group); });
+    return Array.from(groups.values()).sort(function (a, b) { return a.label.localeCompare(b.label, "es", { sensitivity: "base" }); });
+  }
+
+  function availableSites(language, cityZoneId, items) {
+    return eligibleSites(language, items).filter(function (site) { return siteCityZone(site).id === cityZoneId; })
+      .sort(function (a, b) { return siteDisplayName(a).localeCompare(siteDisplayName(b), "es", { sensitivity: "base" }); });
+  }
+
+  function regionalSalesManager(manager, group) {
+    var override = (global.SMART_JEFES_VENTAS_REGIONALES || {})[group];
+    return override ? Object.assign({}, manager, { nombre: override.nombre }) : manager;
+  }
+
   function buildPaymentPlan(tariff, options) {
     var result = {
       valid: false,
@@ -295,6 +463,8 @@
       additionalInitialCop: 0,
       pendingBalanceCop: 0,
       remainingPayments: 0,
+      numberOfPayments: 0,
+      officialNumberOfPayments: tariff ? tariff.numero_pagos : 0,
       regularMonthlyCop: 0,
       lastMonthlyCop: 0,
       sumPaymentsCop: 0,
@@ -311,12 +481,13 @@
       result.errors.push("Selecciona una fecha de matrícula válida.");
       return result;
     }
-    if (!parseISODate(accreditationDate)) {
-      result.errors.push("Selecciona una fecha estimada válida para la confirmación del pago inicial.");
+    if (!validateAccreditationDate(accreditationDate, options && options.now)) {
+      result.errors.push("Selecciona una fecha entre hoy y los próximos 30 días calendario.");
       return result;
     }
 
     if (tariff.numero_pagos === 1) {
+      result.numberOfPayments = 1;
       result.initialCop = tariff.valor_total_oficial_cop;
       result.rows = [{
         number: 1,
@@ -352,14 +523,16 @@
       return result;
     }
 
-    var remaining = tariff.numero_pagos - 1;
-    var balance = tariff.valor_total_oficial_cop - proposedInitial;
-    var regular = roundDivideCOP(balance, remaining);
-    var last = balance - (regular * (remaining - 1));
-    if (last < 0) {
-      regular = Math.floor(balance / remaining);
-      last = balance - (regular * (remaining - 1));
+    var remaining = options && options.remainingPayments != null ? options.remainingPayments : tariff.numero_pagos - 1;
+    var flexible = flexiblePaymentOptions(tariff, proposedInitial, options && options.catalog);
+    if (!Number.isSafeInteger(remaining) || flexible.options.indexOf(remaining) < 0) {
+      result.errors.push("Selecciona una cantidad válida de mensualidades para la cuota inicial propuesta.");
+      return result;
     }
+    var balance = tariff.valor_total_oficial_cop - proposedInitial;
+    var amounts = monthlyAmounts(balance, remaining);
+    var regular = amounts.regularMonthlyCop;
+    var last = amounts.lastMonthlyCop;
     var runningBalance = tariff.valor_total_oficial_cop;
     var rows = [];
     runningBalance -= proposedInitial;
@@ -391,6 +564,7 @@
     result.additionalInitialCop = proposedInitial - tariff.cuota_inicial_minima_cop;
     result.pendingBalanceCop = balance;
     result.remainingPayments = remaining;
+    result.numberOfPayments = rows.length;
     result.regularMonthlyCop = regular;
     result.lastMonthlyCop = last;
     result.sumPaymentsCop = sum;
@@ -423,21 +597,24 @@
     if (pageCount === 1) {
       return [[totalRows]];
     }
+    // Los acuerdos reducidos pueden tener menos filas que dos bloques de tres.
+    // Permitir repartir esas filas evita bloquear un PDF que requiere dos páginas.
+    var minimumRows = Math.min(3, Math.max(1, Math.floor(totalRows / pageCount)));
     var results = [];
     function visit(pageIndex, remaining, current) {
       if (pageIndex === pageCount - 1) {
-        if (remaining >= 3 || (totalRows < 3 && remaining > 0)) {
+        if (remaining >= minimumRows) {
           results.push(current.concat(remaining));
         }
         return;
       }
       var pagesAfter = pageCount - pageIndex - 1;
-      var maximum = remaining - (pagesAfter * 3);
+      var maximum = remaining - (pagesAfter * minimumRows);
       var candidates = [];
       if (pageIndex === 0) {
         candidates.push(0);
       }
-      for (var rows = 3; rows <= maximum; rows += 1) {
+      for (var rows = minimumRows; rows <= maximum; rows += 1) {
         candidates.push(rows);
       }
       candidates.forEach(function (rows) {
@@ -915,6 +1092,7 @@
       lines.push("Tu ahorro frente al valor de lista: " + formatCOP(data.savingsCop) + " (" + String(data.discountText || "0,00 %") + ")");
     }
 
+    appendFlexibleSchedule(lines, data);
     if (!quoteExpired && additionals.length) {
       lines.push("");
       lines.push(SMART_EMOJIS.beneficios + (benefitsExpired ? " *Bonificaciones por validar*" : " *Adicionales bonificados*"));
@@ -1044,6 +1222,7 @@
       lines.push("Primera mensualidad estimada: " + String(data.firstMonthlyDateText || "—"));
       lines.push(PROJECTED_PAYMENT_DISCLAIMER_SHORT);
     }
+    appendFlexibleSchedule(lines, data);
     lines.push("Valor final de la cotización:");
     lines.push(formatCOP(data.totalContractCop));
     lines.push("Ahorro:");
@@ -1109,6 +1288,16 @@
     return "Respaldo de cotización Smart – " + String(data.reference || "—") + " – " + String(data.clientName || "Cliente").trim();
   }
 
+  function appendFlexibleSchedule(lines, data) {
+    if (!data.officialNumberOfPayments || data.remainingPayments >= data.officialNumberOfPayments - 1 ||
+        data.officialNumberOfPayments === 1) { return; }
+    lines.push("", "Calendario de pagos acordado:");
+    (data.paymentRows || []).forEach(function (row) {
+      lines.push(row.number + ". " + row.concept + " · " + formatDateLong(row.dueDate) + " · " + formatCOP(row.valueCop));
+    });
+    lines.push("");
+  }
+
   function buildManagerBackupBody(input) {
     var data = input || {};
     var isCash = Number(data.numberOfPayments) === 1;
@@ -1138,6 +1327,7 @@
       }
     }
     lines.push("Valor final de la cotización:", formatCOP(data.totalContractCop), "");
+    appendFlexibleSchedule(lines, data);
     lines.push("Vigencia:", String(data.expirationText || "—"), "");
     lines.push("Canal utilizado:", "WhatsApp", "");
     lines.push("Referencia:", String(data.reference || "—"), "");
@@ -1551,6 +1741,19 @@
     calculateQuoteExpiration: calculateQuoteExpiration,
     createQuoteReference: createQuoteReference,
     buildPaymentPlan: buildPaymentPlan,
+    parseCapacityInput: parseCapacityInput,
+    paymentCapacityOptions: paymentCapacityOptions,
+    paymentAgreementAction: paymentAgreementAction,
+    siteCityZone: siteCityZone,
+    siteDisplayName: siteDisplayName,
+    availableCityZones: availableCityZones,
+    availableSites: availableSites,
+    accreditationRange: accreditationRange,
+    validateAccreditationDate: validateAccreditationDate,
+    officialPaymentAlternatives: officialPaymentAlternatives,
+    flexiblePaymentOptions: flexiblePaymentOptions,
+    salesManagerForRegion: salesManagerForRegion,
+    regionalSalesManager: regionalSalesManager,
     quoteStatus: quoteStatus,
     ensureFinalPeriod: ensureFinalPeriod,
     generatePrintDistributions: generatePrintDistributions,
@@ -1657,6 +1860,8 @@
   });
   var currentTariff = null;
   var currentCalculation = null;
+  var currentNegotiation = null;
+  var currentAgreementConfirmation = null;
   var selectedAdditionalIds = new Set();
   var selectedAdditionalOptions = {};
   var exceptionalAuthorization = null;
@@ -1696,12 +1901,12 @@
       "cliente", "cliente-pais", "cliente-celular", "cliente-indicativo-otro-row", "cliente-indicativo-otro",
       "cliente-celular-error", "cliente-correo", "cliente-correo-error",
       "asesor", "jefe-ventas-regional", "jefe-ventas", "jefe-ventas-ayuda", "jefe-ventas-error",
-      "idioma", "sede", "observacion", "zona", "estrategia", "plan", "condicion",
-      "numero-pagos", "cuota-propuesta", "fecha-matricula", "fecha-acreditacion-pago-inicial-estimada",
+      "idioma", "ciudad-zona", "sede", "observacion", "zona", "estrategia", "plan", "condicion",
+      "numero-pagos", "cuota-propuesta", "capacidad-mensual", "capacidad-recomendacion", "capacidad-plan-inferior", "btn-confirmar-propuesta", "plazo-flexible", "mensualidades-propuestas", "plazo-advertencia", "acreditacion-error", "fecha-matricula", "fecha-acreditacion-pago-inicial-estimada",
       "fecha-primera-cuota", "matricula-fecha-visible", "matricula-fecha-ayuda",
       "matricula-fecha-error", "vigencia-estimada", "finance-empty-help", "first-date-range", "validation-alert",
       "config-validation-alert",
-      "commercial-message", "advisor-payment-rows", "client-payment-rows",
+      "advisor-payment-rows", "client-payment-rows",
       "client-commercial-message", "client-observation-section", "client-expired-alert", "client-contact-details",
       "quote-state-banner", "toast",
       "advisor-view", "client-view", "print-document", "print-guidance-dialog", "gmail-account-dialog",
@@ -1900,9 +2105,10 @@
 
   function selectedSalesManager() {
     var selectedGroup = elements["jefe-ventas-regional"].value;
-    return salesManagers.find(function (manager) {
-      return manager.id === elements["jefe-ventas"].value && manager.activo && manager.grupo === selectedGroup;
-    }) || null;
+    var manager = salesManagers.find(function (manager) {
+      return manager.id === elements["jefe-ventas"].value && salesManagerForRegion(manager, selectedGroup);
+    });
+    return manager ? regionalSalesManager(manager, selectedGroup) : null;
   }
 
   function salesManagerHasValidEmail(manager) {
@@ -1937,11 +2143,11 @@
   }
 
   function activeSalesManagerGroups() {
-    var groups = Array.from(new Set(salesManagers.filter(function (manager) {
+    var groups = Array.from(new Set(Object.keys(global.SMART_JEFES_VENTAS_REGIONALES || {}).concat(salesManagers.filter(function (manager) {
       return manager.activo && manager.grupo;
     }).map(function (manager) {
       return manager.grupo;
-    })));
+    }))));
     return groups.sort(function (left, right) {
       var leftIndex = SALES_MANAGER_GROUP_ORDER.indexOf(left);
       var rightIndex = SALES_MANAGER_GROUP_ORDER.indexOf(right);
@@ -1969,8 +2175,8 @@
     var previous = preferred == null ? select.value : preferred;
     var selectedGroup = elements["jefe-ventas-regional"].value;
     var ordered = salesManagers.filter(function (manager) {
-      return manager.activo && manager.grupo === selectedGroup;
-    }).sort(function (left, right) {
+      return salesManagerForRegion(manager, selectedGroup);
+    }).map(function (manager) { return regionalSalesManager(manager, selectedGroup); }).sort(function (left, right) {
       return left.nombre.localeCompare(right.nombre, "es");
     });
     select.innerHTML = "";
@@ -2021,7 +2227,16 @@
   }
 
   function currentCommercialContext() {
-    return resolveCommercialContext(currentLanguageId(), elements.sede.value, sites);
+    var context = resolveCommercialContext(currentLanguageId(), elements.sede.value, sites);
+    if (context.valid && siteCityZone(context.site).id !== elements["ciudad-zona"].value) {
+      return { valid: false, site: null, zone: "", error: "Selecciona una sede de la ciudad / zona elegida." };
+    }
+    return context;
+  }
+
+  function populateCityZones() {
+    replaceOptions(elements["ciudad-zona"], availableCityZones(currentLanguageId(), sites), "id", "label", "", "Selecciona ciudad / zona");
+    elements["ciudad-zona"].disabled = !currentLanguageId();
   }
 
   function populateSites(preferred) {
@@ -2031,28 +2246,28 @@
     var placeholder = new Option("Selecciona una sede", "");
     placeholder.disabled = true;
     elements.sede.add(placeholder);
-    sites.filter(function (site) {
-      return site.sede_activa &&
-        ((language === "INGLES" && site.ingles_habilitado) ||
-         (language === "FRANCES" && site.frances_habilitado));
-    }).forEach(function (site) {
-      var option = new Option(site.nombre_sede, site.sede_id);
+    var eligible = availableSites(language, elements["ciudad-zona"].value, sites);
+    eligible.forEach(function (site) {
+      var option = new Option(siteDisplayName(site), site.sede_id);
       elements.sede.add(option);
     });
     var context = resolveCommercialContext(language, previous, sites);
-    elements.sede.value = context.valid ? previous : "";
-    setAutomaticZone(context.valid ? context.site : null);
+    var allowed = context.valid && eligible.some(function (site) { return site.sede_id === previous; });
+    elements.sede.value = allowed ? previous : "";
+    elements.sede.disabled = !elements["ciudad-zona"].value;
+    setAutomaticZone(allowed ? context.site : null);
     return context;
   }
 
   var progressiveFocusTimer = null;
   var PROGRESSIVE_FIELD_IDS = {
     1: "progressive-field-language",
-    2: "progressive-field-site",
-    3: "progressive-field-strategy",
-    4: "progressive-field-plan",
-    5: "progressive-field-condition",
-    6: "progressive-field-payment"
+    2: "progressive-field-city-zone",
+    3: "progressive-field-site",
+    4: "progressive-field-strategy",
+    5: "progressive-field-plan",
+    6: "progressive-field-condition",
+    7: "progressive-field-payment"
   };
 
   function selectedOptionLabel(select) {
@@ -2087,7 +2302,7 @@
   }
 
   function renderProgressiveChoiceSummaries() {
-    var choices = [elements.idioma, elements.sede, elements.estrategia, elements.plan, elements.condicion, elements["numero-pagos"]]
+    var choices = [elements.idioma, elements["ciudad-zona"], elements.sede, elements.estrategia, elements.plan, elements.condicion, elements["numero-pagos"]]
       .map(selectedOptionLabel)
       .filter(Boolean);
     elements["progressive-completed-choices"].innerHTML = "";
@@ -2118,8 +2333,9 @@
 
   function updateProgressiveForm(focusStep) {
     var languageComplete = ["INGLES", "FRANCES"].indexOf(currentLanguageId()) >= 0;
+    var cityComplete = languageComplete && availableCityZones(currentLanguageId(), sites).some(function (group) { return group.id === elements["ciudad-zona"].value; });
     var context = languageComplete ? currentCommercialContext() : { valid: false };
-    var siteComplete = Boolean(languageComplete && context.valid);
+    var siteComplete = Boolean(cityComplete && context.valid);
     var model = siteComplete ? currentModel() : null;
     var strategyComplete = Boolean(siteComplete && model);
     var planComplete = Boolean(strategyComplete && elements.plan.value);
@@ -2128,17 +2344,18 @@
 
     setProgressiveFieldState(1, true, true);
     setProgressiveFieldState(2, languageComplete, siteValidation.valida);
-    setProgressiveFieldState(3, siteComplete, tariffModelValidation.valida);
-    setProgressiveFieldState(4, strategyComplete, true);
-    setProgressiveFieldState(5, planComplete, true);
-    setProgressiveFieldState(6, conditionComplete, true);
+    setProgressiveFieldState(3, cityComplete, siteValidation.valida);
+    setProgressiveFieldState(4, siteComplete, tariffModelValidation.valida);
+    setProgressiveFieldState(5, strategyComplete, true);
+    setProgressiveFieldState(6, planComplete, true);
+    setProgressiveFieldState(7, conditionComplete, true);
     updateProgressiveZoneInformation(context, model);
 
-    var currentStep = !languageComplete ? 1 : (!siteComplete ? 2 : (!strategyComplete ? 3 : (!planComplete ? 4 : (!conditionComplete ? 5 : 6))));
-    elements["progressive-step-indicator"].textContent = "Paso " + currentStep + " de 6" + (paymentComplete ? " · Selección completa" : "");
+    var currentStep = !languageComplete ? 1 : (!cityComplete ? 2 : (!siteComplete ? 3 : (!strategyComplete ? 4 : (!planComplete ? 5 : (!conditionComplete ? 6 : 7)))));
+    elements["progressive-step-indicator"].textContent = "Paso " + currentStep + " de 7" + (paymentComplete ? " · Selección completa" : "");
     var help = !languageComplete
       ? "Selecciona el idioma del programa para comenzar."
-      : (!siteComplete
+      : (!cityComplete ? "Selecciona la ciudad / zona para ver sus sedes disponibles." : (!siteComplete
         ? "Selecciona la sede donde se gestionará la matrícula."
         : (!strategyComplete
           ? "Selecciona el plan tarifario."
@@ -2148,7 +2365,7 @@
               ? "Selecciona la condición comercial aplicable."
               : (!paymentComplete
                 ? "Selecciona una forma de pago autorizada por la tarifa."
-                : "La selección comercial está completa. Puedes continuar con la configuración de la propuesta.")))));
+                : "La selección comercial está completa. Puedes continuar con la configuración de la propuesta."))))));
     elements["progressive-step-help"].textContent = help;
     renderProgressiveChoiceSummaries();
 
@@ -2187,7 +2404,7 @@
   function paymentOptionLabel(number) {
     return number === 1
       ? "Pago de contado"
-      : number + " pagos — 1 inicial + " + (number - 1) + " mensuales";
+      : "Plan tarifario · Hasta " + number + " pagos";
   }
 
   function populatePaymentOptions(preferred) {
@@ -2548,6 +2765,7 @@
   }
 
   function updateDateRange(resetDate) {
+    refreshAccreditationCalendar();
     var accreditationDate = elements["fecha-acreditacion-pago-inicial-estimada"].value;
     var range = firstMonthlyRange(accreditationDate);
     elements["fecha-primera-cuota"].min = range.min;
@@ -2558,6 +2776,90 @@
     if (resetDate || !validateFirstMonthlyDate(accreditationDate, elements["fecha-primera-cuota"].value)) {
       elements["fecha-primera-cuota"].value = range.min;
     }
+  }
+
+  function refreshAccreditationCalendar() {
+    var field = elements["fecha-acreditacion-pago-inicial-estimada"];
+    var range = accreditationRange();
+    var changedDay = Boolean(field.min && field.min !== range.min);
+    field.min = range.min;
+    field.max = range.max;
+    var valid = validateAccreditationDate(field.value);
+    var message = valid ? "" : "Selecciona una fecha entre hoy y los próximos 30 días calendario.";
+    field.setCustomValidity(message);
+    field.setAttribute("aria-invalid", String(!valid));
+    elements["acreditacion-error"].textContent = message;
+    elements["acreditacion-error"].hidden = valid;
+    if (changedDay && !valid) {
+      markModified();
+      currentCalculation = null;
+      renderProposal();
+    }
+    return valid;
+  }
+
+  function refreshFlexiblePayments() {
+    var select = elements["mensualidades-propuestas"];
+    var previous = Number(select.value);
+    var initial = parseCOPInput(elements["cuota-propuesta"].value);
+    var result = flexiblePaymentOptions(currentTariff, initial);
+    currentNegotiation = paymentCapacityOptions(currentTariff, initial,
+      parseCapacityInput(elements["capacidad-mensual"].value), previous);
+    var lowest = currentNegotiation.choices.reduce(function (best, choice) {
+      return !best || choice.requiredCapacityCop < best.requiredCapacityCop ? choice : best;
+    }, null);
+    currentNegotiation.lowestMonthlyChoice = lowest;
+    select.innerHTML = "";
+    select.add(new Option("Selecciona los pagos reales del acuerdo", ""));
+    currentNegotiation.choices.forEach(function (choice) {
+      var label = choice.numberOfPayments + " pagos · " + choice.remainingPayments + " mensualidades · " + formatCOP(choice.regularMonthlyCop) + " aprox.";
+      label += !choice.viable ? " · Supera capacidad" :
+        (choice.numberOfPayments === currentNegotiation.recommendedPayments ? " · Se ajusta · RECOMENDADO" : " · Se ajusta");
+      if (currentNegotiation.noViable && choice === lowest) { label += " · MENOR MENSUALIDAD"; }
+      select.add(new Option(label, String(choice.remainingPayments)));
+    });
+    // La recomendación informa; únicamente una selección o aceptación expresa fija el acuerdo.
+    select.value = currentNegotiation.selected ? String(previous) : "";
+    select.disabled = !currentNegotiation.choices.length;
+    elements["plazo-flexible"].hidden = !currentNegotiation.choices.length;
+    elements["plazo-advertencia"].textContent = result.warning;
+    elements["plazo-advertencia"].hidden = !result.warning;
+    var internal = currentNegotiation;
+    elements["capacidad-recomendacion"].textContent = internal.noViable ? "" : internal.recommendation;
+    elements["capacidad-recomendacion"].hidden = !internal.recommendation || internal.noViable;
+    elements["capacidad-plan-inferior"].textContent = internal.shorterSuggestion;
+    elements["capacidad-plan-inferior"].hidden = !internal.shorterSuggestion || Boolean(result.warning);
+    elements["capacidad-mensual"].setAttribute("aria-invalid", String(Boolean(result.options.length && !internal.capacityValid)));
+  }
+
+  function currentAgreementSignature() {
+    return JSON.stringify([elements["numero-pagos"].value, elements["cuota-propuesta"].value,
+      elements["capacidad-mensual"].value, elements["mensualidades-propuestas"].value,
+      elements["fecha-acreditacion-pago-inicial-estimada"].value, elements["fecha-primera-cuota"].value]);
+  }
+
+  function renderAgreementAction() {
+    var action = paymentAgreementAction(currentCalculation, parseCapacityInput(elements["capacidad-mensual"].value));
+    var button = elements["btn-confirmar-propuesta"];
+    button.hidden = !action;
+    button.textContent = action ? action.label : "Confirmar propuesta";
+    button.disabled = Boolean(action && currentAgreementConfirmation && currentAgreementConfirmation.signature === currentAgreementSignature());
+  }
+
+  function confirmPaymentAgreement() {
+    calculateAndRender();
+    var capacity = parseCapacityInput(elements["capacidad-mensual"].value);
+    var action = paymentAgreementAction(currentCalculation, capacity);
+    if (!action) { return; }
+    markModified();
+    if (action.increasesCapacity) { elements["capacidad-mensual"].value = formatInteger(action.requiredCapacityCop); }
+    if (!calculateAndRender()) { return; }
+    currentAgreementConfirmation = { signature: currentAgreementSignature(), previousCapacityCop: capacity,
+      acceptedCapacityCop: parseCapacityInput(elements["capacidad-mensual"].value),
+      requiredCapacityCop: action.requiredCapacityCop, numberOfPayments: action.numberOfPayments,
+      confirmedAt: new Date().toISOString() };
+    renderFinanceStatus();
+    renderAgreementAction();
   }
 
   function setPaymentModeVisibility(isCash) {
@@ -2579,7 +2881,7 @@
 
   function currentSiteName() {
     var site = selectedSite();
-    return site ? site.nombre_sede : "";
+    return site ? siteDisplayName(site) : "";
   }
 
   function renderCatalogUpdateLabel() {
@@ -2663,6 +2965,11 @@
   function clearCalculatedProposal() {
     currentTariff = null;
     currentCalculation = null;
+    currentAgreementConfirmation = null;
+    renderAgreementAction();
+    elements["capacidad-mensual"].value = "";
+    elements["mensualidades-propuestas"].value = "";
+    refreshFlexiblePayments();
     setBoundText("zona-resumen", currentZoneId() ? zoneLabel(currentZoneId()) : "Zona pendiente");
     setBoundText("plan-nombre", "Selecciona un programa");
     setBoundText("niveles", "—");
@@ -2687,7 +2994,6 @@
     setStageAndContinuityVisibility(null);
     elements["advisor-payment-rows"].innerHTML = "";
     elements["client-payment-rows"].innerHTML = "";
-    elements["commercial-message"].hidden = true;
     elements["client-commercial-message"].hidden = true;
     setMoneyInput("");
     elements["finance-empty-help"].hidden = false;
@@ -2752,6 +3058,8 @@
     }
     if (resetInitial) {
       setMoneyInput("");
+      elements["capacidad-mensual"].value = "";
+      elements["mensualidades-propuestas"].value = "";
     }
     var isCash = currentTariff.numero_pagos === 1;
     setPaymentModeVisibility(isCash);
@@ -2763,8 +3071,35 @@
 
   function showValidation(messages) {
     var list = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
+    elements["validation-alert"].className = "validation-alert";
+    elements["validation-alert"].setAttribute("role", "alert");
     elements["validation-alert"].hidden = list.length === 0;
     elements["validation-alert"].textContent = list.join(" ");
+  }
+
+  // Único componente para el estado financiero: no se vuelve a renderizar en
+  // refreshFlexiblePayments ni en el resumen. La viabilidad no borra el cálculo.
+  function renderFinanceStatus() {
+    var negotiation = currentNegotiation;
+    var errors = currentCalculation ? currentCalculation.errors : [];
+    var pendingSelection = negotiation && negotiation.choices.length && !negotiation.selected;
+    var missingCapacity = negotiation && !negotiation.capacityValid && negotiation.message;
+    if (errors.length && !pendingSelection && !missingCapacity) {
+      showValidation(errors);
+    } else if (negotiation && !negotiation.valid) {
+      showValidation(negotiation.noViable
+        ? "Ninguna alternativa se ajusta todavía a la capacidad indicada. La opción de menor mensualidad es de " + negotiation.lowestMonthlyChoice.numberOfPayments + " pagos. Selecciona una alternativa para revisar y confirmar el importe que el cliente acepta, o ajusta la cuota inicial."
+        : negotiation.message);
+    } else if (currentCalculation && currentCalculation.valid && negotiation && negotiation.valid && currentCalculation.remainingPayments) {
+      showValidation("Esta alternativa se ajusta a la capacidad indicada. " + commercialMessage());
+      elements["validation-alert"].className = "commercial-message";
+      elements["validation-alert"].setAttribute("role", "status");
+      if (currentAgreementConfirmation && currentAgreementConfirmation.signature === currentAgreementSignature()) {
+        elements["validation-alert"].textContent += " Propuesta confirmada.";
+      }
+    } else {
+      showValidation(errors);
+    }
   }
 
   function calculateAndRender() {
@@ -2782,6 +3117,8 @@
     }
     var isCash = currentTariff.numero_pagos === 1;
     var proposedText = elements["cuota-propuesta"].value.trim();
+    refreshFlexiblePayments();
+    refreshAccreditationCalendar();
     if (!isCash && !proposedText) {
       currentCalculation = null;
       showValidation([]);
@@ -2796,11 +3133,12 @@
         : parseCOPInput(proposedText),
       enrollmentDate: elements["fecha-matricula"].value,
       accreditationDate: elements["fecha-acreditacion-pago-inicial-estimada"].value,
-      firstMonthlyDate: elements["fecha-primera-cuota"].value
+      firstMonthlyDate: elements["fecha-primera-cuota"].value,
+      remainingPayments: isCash ? 0 : Number(elements["mensualidades-propuestas"].value)
     });
-    showValidation(currentCalculation.errors);
+    renderFinanceStatus();
     renderProposal();
-    return currentCalculation.valid;
+    return currentCalculation.valid && currentNegotiation.valid;
   }
 
   function renderPaymentRows(target, rows, compact) {
@@ -2824,8 +3162,8 @@
       return "";
     }
     var message = "Con una cuota inicial de " + formatCOP(currentCalculation.initialCop) +
-      ", en este plan de " + currentTariff.numero_pagos + " pagos las " + currentCalculation.remainingPayments +
-      " mensualidades quedan en aproximadamente " + formatCOP(currentCalculation.regularMonthlyCop) + ".";
+      " y " + currentCalculation.remainingPayments + " mensualidades, cada mensualidad queda aproximadamente en " +
+      formatCOP(currentCalculation.regularMonthlyCop) + ".";
     if (currentCalculation.lastMonthlyCop !== currentCalculation.regularMonthlyCop) {
       message += " La última cuota será de " + formatCOP(currentCalculation.lastMonthlyCop) + " para completar el valor exacto del plan.";
     }
@@ -2833,6 +3171,7 @@
   }
 
   function renderProposal() {
+    renderAgreementAction();
     if (!currentTariff) {
       return;
     }
@@ -2845,9 +3184,6 @@
       : (calculationValid ? calculation.initialCop : null);
     var savings = currentTariff.valor_full_oficial_cop - currentTariff.valor_total_oficial_cop;
     var levelsText = currentTariff.niveles_incluidos.join(", ");
-    var formText = isCash
-      ? "Pago de contado"
-      : currentTariff.numero_pagos + " pagos: 1 cuota inicial + " + (currentTariff.numero_pagos - 1) + " mensualidades";
     var paymentDate = elements["fecha-acreditacion-pago-inicial-estimada"].value;
     var message = commercialMessage();
 
@@ -2868,12 +3204,11 @@
     setBoundText("saldo", calculationValid ? formatCOP(calculation.pendingBalanceCop) : "—");
     setBoundText("mensualidades", isCash ? "0" : (calculationValid ? String(calculation.remainingPayments) : "—"));
     setBoundText("mensualidad", calculationValid ? formatCOP(calculation.regularMonthlyCop) : "—");
-    setBoundText("mensualidades-resumen", isCash ? "" : (calculationValid ? calculation.remainingPayments + " cuotas mensuales de" : "Mensualidades por calcular"));
+    setBoundText("mensualidades-resumen", isCash ? "" : (calculationValid ? calculation.remainingPayments + " mensualidades de aproximadamente" : "Mensualidades por calcular"));
     setBoundText("ultima-cuota", calculationValid ? formatCOP(calculation.lastMonthlyCop) : "—");
     setBoundText("valor-hora", formatCOP(currentTariff.valor_por_hora_mostrado_cop));
     setBoundText("intensidad", formatInteger(currentTariff.maxima_intensidad_mensual_mostrada));
-    setBoundText("numero-pagos-resumen", currentTariff.numero_pagos === 1 ? "1 pago" : currentTariff.numero_pagos + " pagos");
-    setBoundText("forma-pago", formText);
+    setBoundText("numero-pagos-resumen", isCash ? "1 pago" : (calculationValid ? calculation.numberOfPayments + " pagos acordados" : "—"));
     setBoundText("fecha-primer-pago", formatDateLong(paymentDate));
     setBoundText("fecha-matricula-estimada", formatDateLong(elements["fecha-matricula"].value));
     setBoundText("fecha-acreditacion-pago-inicial", formatDateLong(elements["fecha-acreditacion-pago-inicial-estimada"].value));
@@ -2889,8 +3224,6 @@
     setBoundText("diferencia", calculationValid ? formatCOP(calculation.differenceCop) : "—");
     setStageAndContinuityVisibility(currentTariff);
 
-    elements["commercial-message"].hidden = !message;
-    elements["commercial-message"].textContent = message;
     elements["client-commercial-message"].hidden = !message;
     elements["client-commercial-message"].textContent = message;
     elements["client-observation-section"].hidden = !elements.observacion.value.trim();
@@ -2962,6 +3295,7 @@
     if (initializing) {
       return;
     }
+    currentAgreementConfirmation = null;
     preparedWhatsAppMessage = "";
     if (quote.status === "VIGENTE" || quote.status === "VENCIDA") {
       quote.status = "MODIFICADA";
@@ -3005,7 +3339,7 @@
     resetDependentTariffSelectors();
     showValidation([]);
     renderQuoteState();
-    updateProgressiveForm(4);
+    updateProgressiveForm(5);
   }
 
   function handleLanguageChange() {
@@ -3013,6 +3347,7 @@
     markModified();
     renderProductLabels();
     var previousContext = resolveCommercialContext(currentLanguageId(), previousSiteId, sites);
+    populateCityZones();
     populateSites("");
     populateTariffModels("");
     resetDependentTariffSelectors();
@@ -3028,14 +3363,24 @@
 
   function handleSiteChange() {
     markModified();
-    var site = selectedSite();
-    setAutomaticZone(site);
+    var selectedContext = currentCommercialContext();
+    if (!selectedContext.valid) { elements.sede.value = ""; }
+    setAutomaticZone(selectedContext.valid ? selectedContext.site : null);
     populateTariffModels("");
     resetDependentTariffSelectors();
     renderCatalogUpdateLabel();
     var context = currentCommercialContext();
     showValidation(context.valid ? [] : context.error);
-    updateProgressiveForm(context.valid ? 3 : null);
+    updateProgressiveForm(context.valid ? 4 : null);
+  }
+
+  function handleCityZoneChange() {
+    markModified();
+    populateSites("");
+    populateTariffModels("");
+    resetDependentTariffSelectors();
+    showValidation([]);
+    updateProgressiveForm(3);
   }
 
   function handlePlanChange() {
@@ -3044,7 +3389,7 @@
     populateConditions("");
     populatePaymentOptions("");
     clearCalculatedProposal();
-    updateProgressiveForm(elements.plan.value ? 5 : null);
+    updateProgressiveForm(elements.plan.value ? 6 : null);
   }
 
   function handleConditionChange() {
@@ -3052,7 +3397,7 @@
     clearAdditionalSelection();
     populatePaymentOptions("");
     clearCalculatedProposal();
-    updateProgressiveForm(elements.condicion.value ? 6 : null);
+    updateProgressiveForm(elements.condicion.value ? 7 : null);
   }
 
   function handlePaymentChange() {
@@ -3129,6 +3474,10 @@
       showToast("Corrige las validaciones antes de generar la cotización.");
       return;
     }
+    if (!validateSalesManagerForSharing(true)) {
+      showValidation("Selecciona un jefe de ventas válido antes de generar la cotización.");
+      return;
+    }
     var phoneValidation = validateClientPhone(false);
     var emailValid = validateClientEmail();
     if (!phoneValidation.valid || !emailValid) {
@@ -3185,6 +3534,7 @@
     quote.expiresAt = calculatedExpiration.toISOString();
     quote.enrollmentDate = elements["fecha-matricula"].value;
     quote.salesManagerId = elements["jefe-ventas"].value || "";
+    quote.agreementSignature = currentAgreementSignature();
     quote.reference = createQuoteReference(now);
     var campaign = activeAdditionalCampaign();
     quote.campaignId = campaign ? campaign.campana_id : null;
@@ -3212,74 +3562,21 @@
     }).filter(Boolean).sort()[0] || null;
     promotionExpired = false;
     quote.status = "VIGENTE";
+    quote.paymentAgreementConfirmation = currentAgreementConfirmation;
     preparedWhatsAppMessage = "";
-    showValidation([]);
+    renderFinanceStatus();
     renderProposal();
-    registerGeneratedQuote();
     showToast(ensureFinalPeriod("Cotización generada. Vigente hasta el " + formatBogotaDateTime(quote.expiresAt)));
   }
 
-  function registrationPayload() {
-    var share = currentWhatsAppMessageData(DEFAULT_SHARE_CONTEXT);
-    var trace = quote.tariffTrace || {};
-    var calculation = currentCalculation || {};
-    return {
-      id_cotizacion: quote.reference,
-      fecha_generacion: quote.generatedAt,
-      fecha_vencimiento: quote.expiresAt,
-      nombre_cliente: share.clientName,
-      celular_cliente: share.clientPhoneNormalized || "",
-      correo_cliente: share.clientEmail || "",
-      nombre_comercial: share.advisorName,
-      correo_comercial: "",
-      nombre_jefe_ventas: share.managerName || "",
-      correo_jefe_ventas: share.managerEmail || "",
-      sede: share.siteName,
-      idioma: share.languageName,
-      plan_tarifario: trace.modelo_tarifario_id || "",
-      modalidad: trace.modalidad_cliente || "",
-      programa: share.programName,
-      porcentaje_descuento: currentTariff ? Number(currentTariff.porcentaje_descuento_exacto || 0) : 0,
-      valor_descuento: share.savingsCop || 0,
-      valor_final_contrato: share.totalContractCop || 0,
-      forma_pago: share.isCash ? "CONTADO" : "FINANCIADO",
-      valor_cuota_inicial: share.initialCop || 0,
-      saldo_financiar: calculation.pendingBalanceCop || 0,
-      numero_cuotas: share.numberOfPayments || 1,
-      valor_cuotas_posteriores: share.regularMonthlyCop || 0,
-      valor_ultima_cuota: share.lastMonthlyCop || 0,
-      fecha_primera_cuota: elements["fecha-primera-cuota"].value || "",
-      beneficios: share.additionals || [],
-      estado: quote.status,
-      fecha_matricula: quote.enrollmentDate || "",
-      version_modelo: trace.modelo_tarifario_version || "",
-      fecha_registro: new Date().toISOString()
-    };
-  }
-
-  function registerGeneratedQuote() {
-    var config = global.SMART_REGISTRO_COTIZACIONES || {};
-    var endpoint = String(config.endpoint || "").trim();
-    if (!config.activo || !endpoint || endpoint.indexOf("__APPS_SCRIPT_") === 0) {
-      return false;
-    }
-    try {
-      var body = JSON.stringify(registrationPayload());
-      if (global.navigator && typeof global.navigator.sendBeacon === "function") {
-        return global.navigator.sendBeacon(endpoint, body);
-      }
-    } catch (error) {
-      console.warn("No fue posible registrar la cotización.", error);
-    }
-    return false;
-  }
-
   function ensureCurrentQuote() {
+    if (!refreshAccreditationCalendar() || !validateSalesManagerForSharing(true)) { return false; }
     if (!ensureCommercialAvailability(true)) {
       return false;
     }
     var selectedTariff = findSelectedTariff();
     if (!currentTariff || selectedTariff !== currentTariff || !currentCalculation || !currentCalculation.valid ||
+        !currentNegotiation || !currentNegotiation.valid || quote.agreementSignature !== currentAgreementSignature() ||
         quote.additionalSignature !== currentAdditionalSignature() ||
         quote.enrollmentDate !== elements["fecha-matricula"].value ||
         quote.salesManagerId !== (elements["jefe-ventas"].value || "")) {
@@ -3308,9 +3605,13 @@
   }
 
   function showClientView() {
-    if (!ensureCommercialAvailability(true) || !calculateAndRender()) {
+    if (!ensureCommercialAvailability(true)) {
       return;
     }
+    calculateAndRender();
+    // La vista previa permite comparar un acuerdo calculado que exceda capacidad.
+    // Generar, imprimir y compartir siguen exigiendo viabilidad y regeneración.
+    if (!currentCalculation || !currentCalculation.valid) { return; }
     elements["advisor-view"].hidden = true;
     elements["client-view"].hidden = false;
     document.body.classList.add("client-mode");
@@ -3357,7 +3658,9 @@
       programName: clientProgramDisplayName(currentTariff),
       levelsIncluded: currentTariff ? currentTariff.niveles_incluidos : [],
       academicHours: currentTariff ? currentTariff.horas_academicas : 0,
-      numberOfPayments: currentTariff ? currentTariff.numero_pagos : 0,
+      numberOfPayments: currentCalculation ? currentCalculation.numberOfPayments : 0,
+      officialNumberOfPayments: currentCalculation ? currentCalculation.officialNumberOfPayments : 0,
+      paymentRows: currentCalculation ? currentCalculation.rows : [],
       initialCop: currentCalculation ? currentCalculation.initialCop : 0,
       remainingPayments: currentCalculation ? currentCalculation.remainingPayments : 0,
       regularMonthlyCop: currentCalculation ? currentCalculation.regularMonthlyCop : 0,
@@ -3385,7 +3688,7 @@
       expirationText: formatBogotaDateTime(quote.expiresAt),
       reference: quote.reference || "",
       isCash: isCash,
-      paymentLabel: isCash ? "Pago de contado" : "Financiación · " + (currentTariff ? currentTariff.numero_pagos : 0) + " pagos"
+      paymentLabel: isCash ? "Pago de contado" : "1 cuota inicial + " + (currentCalculation ? currentCalculation.remainingPayments : 0) + " mensualidades"
     };
   }
 
@@ -3395,6 +3698,7 @@
     }
     var selectedTariff = findSelectedTariff();
     if (!currentTariff || selectedTariff !== currentTariff || !currentCalculation || !currentCalculation.valid ||
+        !currentNegotiation || !currentNegotiation.valid || quote.agreementSignature !== currentAgreementSignature() ||
         quote.additionalSignature !== currentAdditionalSignature() ||
         quote.enrollmentDate !== elements["fecha-matricula"].value ||
         quote.salesManagerId !== (elements["jefe-ventas"].value || "")) {
@@ -4750,12 +5054,6 @@
   }
 
   function waitForStablePrintLayout(session) {
-    if (isEmbeddedInAnotherPage()) {
-      global.getComputedStyle(session.root).width;
-      session.root.getBoundingClientRect();
-      session.root.scrollHeight;
-      return Promise.resolve();
-    }
     var fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
     return Promise.resolve(fontsReady).then(function () {
       global.getComputedStyle(session.root).width;
@@ -4935,37 +5233,6 @@
     return null;
   }
 
-  async function chooseFastPrintDistribution(session) {
-    var totalRows = currentCalculation.rows.length;
-    var totalBonusCards = printBonusCards().length;
-    var maximumPages = Math.max(1, Math.ceil(totalRows / 3) + 1);
-    for (var pageCount = 1; pageCount <= maximumPages; pageCount += 1) {
-      var distributions = generatePrintDistributions(totalRows, pageCount).sort(function (left, right) {
-        return printDistributionBalancePenalty(left) - printDistributionBalancePenalty(right);
-      });
-      var bonusPlacements = printBonusFirstPageOptions(pageCount);
-      for (var index = 0; index < Math.min(distributions.length, 8); index += 1) {
-        for (var placementIndex = 0; placementIndex < bonusPlacements.length; placementIndex += 1) {
-          if (!printDistributionRespectsSectionOrder(distributions[index], bonusPlacements[placementIndex], totalBonusCards)) {
-            continue;
-          }
-          var measured = await measurePrintDistribution(session, distributions[index], bonusPlacements[placementIndex]);
-          if (!measured) {
-            continue;
-          }
-          rememberPrintCandidate(session, measured, "RUTA_RAPIDA");
-          if (!measured.metrics.some(function (metric) { return metric.overflow; })) {
-            measured.score = scoreMeasuredDistribution(measured);
-            measured.imbalanceReason = "Distribución equilibrada validada mediante la ruta rápida.";
-            measured.selectionReason = "Primera distribución equilibrada sin desbordamiento real.";
-            return measured;
-          }
-        }
-      }
-    }
-    return chooseMeasuredPrintDistribution(session);
-  }
-
   function explainPrintWhitespace(selected, metrics) {
     var reasons = [];
     if (selected.bonusFirstPageCount < selected.totalBonusCards) {
@@ -5075,13 +5342,10 @@
   async function preparePrintDocument(session) {
     var container = session.root;
     printPreparationError = "";
-    var fastMode = isEmbeddedInAnotherPage();
     if (!ensureCurrentQuote()) {
       return false;
     }
-    var selected = fastMode
-      ? await chooseFastPrintDistribution(session)
-      : await chooseMeasuredPrintDistribution(session);
+    var selected = await chooseMeasuredPrintDistribution(session);
     if (!selected) {
       printPreparationError = "No fue posible generar correctamente el resumen económico. Reintenta la impresión.";
       return false;
@@ -5204,60 +5468,6 @@
 
   var pendingPrintSaveAsPdf = false;
   var pendingPrintFileName = "";
-  var STANDALONE_APP_URL = "https://smart-tdx.github.io/Procesos-Comerciales/Calculadora%20comercial%20Instituto/";
-
-  function isEmbeddedInAnotherPage() {
-    try {
-      return global.self !== global.top;
-    } catch (error) {
-      return true;
-    }
-  }
-
-  function printPreparedDocumentInStandaloneWindow(printWindow, fileName) {
-    var title = String(fileName || "Cotizacion_Smart.pdf").replace(/\.pdf$/i, "");
-    var bodyClass = document.body.classList.contains("cash-payment-mode") ? "cash-payment-mode" : "";
-    var html = "<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\">" +
-      "<base href=\"" + STANDALONE_APP_URL + "\">" +
-      "<title>" + title.replace(/[<>&\"]/g, "") + "</title>" +
-      "<link rel=\"stylesheet\" href=\"" + STANDALONE_APP_URL + "estilos.css\">" +
-      "</head><body class=\"" + bodyClass + "\">" + elements["print-document"].outerHTML + "</body></html>";
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    var printingStarted = false;
-    var startPrinting = function () {
-      if (printingStarted) {
-        return;
-      }
-      printingStarted = true;
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } catch (error) {
-        showToast("La pestaña se abrió, pero el navegador bloqueó la impresión. Usa Ctrl + P en esa pestaña.");
-      } finally {
-        cleanupPrintSession("impresion_en_ventana_independiente");
-      }
-    };
-    var stylesheet = printWindow.document.querySelector('link[rel="stylesheet"]');
-    if (stylesheet) {
-      stylesheet.addEventListener("load", function () { global.setTimeout(startPrinting, 80); }, { once: true });
-      stylesheet.addEventListener("error", function () { global.setTimeout(startPrinting, 80); }, { once: true });
-      global.setTimeout(startPrinting, 1200);
-    } else {
-      global.setTimeout(startPrinting, 80);
-    }
-  }
-
-  function showStandalonePrintProgress(printWindow) {
-    printWindow.document.open();
-    printWindow.document.write("<!doctype html><html lang=\"es\"><head><meta charset=\"utf-8\"><title>Preparando PDF</title></head>" +
-      "<body style=\"margin:0;min-height:100vh;display:grid;place-items:center;background:#f7f4f4;font-family:Arial,sans-serif;color:#7f171c\">" +
-      "<main style=\"text-align:center;padding:32px\"><div style=\"font-size:42px\">●</div><h1 style=\"font-size:24px\">Preparando PDF…</h1>" +
-      "<p style=\"color:#5f6368\">Estamos organizando la cotización. Esta pestaña abrirá la impresión automáticamente.</p></main></body></html>");
-    printWindow.document.close();
-  }
 
   function closePrintGuidance() {
     if (typeof elements["print-guidance-dialog"].close === "function") {
@@ -5276,80 +5486,6 @@
     }
   }
 
-  async function downloadPreparedDocumentAsPdf(session, fileName) {
-    if (typeof global.html2pdf !== "function") {
-      throw new Error("MOTOR_PDF_NO_DISPONIBLE");
-    }
-    var host = elements["print-document"];
-    var previousStyle = host.getAttribute("style");
-    host.classList.add("is-measuring", "print-active");
-    host.setAttribute("aria-hidden", "false");
-    host.style.left = "0";
-    host.style.zIndex = "-1000";
-    host.style.pointerEvents = "none";
-    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
-    var previousSheetStyles = sheets.map(function (sheet) {
-      return sheet.getAttribute("style");
-    });
-    sheets.forEach(function (sheet) {
-      // html2pdf pagina automáticamente el lienzo. Los saltos CSS usados por
-      // window.print duplican páginas cuando también los interpreta html2pdf.
-      sheet.style.setProperty("break-before", "auto", "important");
-      sheet.style.setProperty("break-after", "auto", "important");
-      sheet.style.setProperty("page-break-before", "auto", "important");
-      sheet.style.setProperty("page-break-after", "auto", "important");
-      sheet.style.setProperty("height", "296.8mm", "important");
-    });
-    try {
-      var pdfOptions = {
-        margin: 0,
-        filename: fileName || "Cotizacion_Smart.pdf",
-        image: { type: "jpeg", quality: 0.96 },
-        html2canvas: {
-          scale: 1.35,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: 794
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
-      };
-      if (!sheets.length) {
-        throw new Error("DOCUMENTO_PDF_VACIO");
-      }
-      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
-      var pdf = await firstWorker.get("pdf");
-      // Una hoja ligeramente mayor por redondeo puede hacer que html2pdf cree
-      // páginas adicionales. La primera hoja debe ocupar exactamente una.
-      while (pdf.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.getNumberOfPages());
-      }
-      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
-        var canvas = await global.html2pdf()
-          .set(pdfOptions)
-          .from(sheets[sheetIndex])
-          .toCanvas()
-          .get("canvas");
-        pdf.addPage("a4", "portrait");
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
-      }
-      pdf.save(pdfOptions.filename);
-    } finally {
-      sheets.forEach(function (sheet, index) {
-        if (previousSheetStyles[index] === null) {
-          sheet.removeAttribute("style");
-        } else {
-          sheet.setAttribute("style", previousSheetStyles[index]);
-        }
-      });
-      if (previousStyle === null) {
-        host.removeAttribute("style");
-      } else {
-        host.setAttribute("style", previousStyle);
-      }
-    }
-  }
-
   async function continuePrinting() {
     if (isPrinting) {
       showToast("Ya existe una impresión en preparación. Espera a que finalice.");
@@ -5357,23 +5493,6 @@
     }
     var saveAsPdf = pendingPrintSaveAsPdf;
     var requestedPdfFileName = pendingPrintFileName;
-    var embedded = isEmbeddedInAnotherPage();
-    var standalonePrintWindow = embedded && !saveAsPdf ? global.open("about:blank", "_blank") : null;
-    if (embedded && !saveAsPdf && !standalonePrintWindow) {
-      closePrintGuidance();
-      showToast("Google Sites requiere permitir ventanas emergentes para descargar el PDF.");
-      setPrintControlsDisabled(false);
-      return;
-    }
-    if (standalonePrintWindow) {
-      showStandalonePrintProgress(standalonePrintWindow);
-      try {
-        standalonePrintWindow.blur();
-        global.focus();
-      } catch (error) {
-        // El flujo continúa aunque el navegador conserve el foco en la pestaña nueva.
-      }
-    }
     closePrintGuidance();
     showClientView();
     var session = createFreshPrintSession();
@@ -5394,22 +5513,7 @@
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
       updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
-      showToast("Generando y descargando el PDF…");
-      try {
-        await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
-        cleanupPrintSession("descarga_pdf_directa");
-        showToast("PDF descargado correctamente.");
-      } catch (error) {
-        cleanupPrintSession("descarga_pdf_fallida");
-        showToast(error && error.message === "MOTOR_PDF_NO_DISPONIBLE"
-          ? "No cargó el generador de PDF. Actualiza la página e inténtalo nuevamente."
-          : "No fue posible descargar el PDF. Reintenta la descarga.");
-      }
-      return;
-    }
-    if (standalonePrintWindow) {
-      printPreparedDocumentInStandaloneWindow(standalonePrintWindow, session.pdfFileName || requestedPdfFileName);
-      return;
+      showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
     }
     global.setTimeout(function () {
       if (!activePrintSession || activePrintSession.id !== session.id) {
@@ -5442,10 +5546,6 @@
     pendingPrintFileName = saveAsPdf
       ? (suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId)))
       : "";
-    if (saveAsPdf) {
-      continuePrinting();
-      return;
-    }
     if (typeof elements["print-guidance-dialog"].showModal === "function") {
       elements["print-guidance-dialog"].showModal();
     } else {
@@ -5497,6 +5597,7 @@
     elements.idioma.value = "";
     populateTariffModels("");
     renderProductLabels();
+    populateCityZones();
     populateSites("");
     resetDependentTariffSelectors();
     var today = todayBogotaISO();
@@ -5523,6 +5624,7 @@
 
   function bindEvents() {
     elements.idioma.addEventListener("change", handleLanguageChange);
+    elements["ciudad-zona"].addEventListener("change", handleCityZoneChange);
     elements.sede.addEventListener("change", handleSiteChange);
     elements.estrategia.addEventListener("change", handleStrategyChange);
     elements.plan.addEventListener("change", handlePlanChange);
@@ -5536,6 +5638,20 @@
     elements["jefe-ventas"].addEventListener("change", handleSalesManagerChange);
     elements["cuota-propuesta"].addEventListener("input", handleMoneyInput);
     elements["cuota-propuesta"].addEventListener("blur", normalizeMoneyField);
+    elements["capacidad-mensual"].addEventListener("input", function () {
+      markModified();
+      calculateAndRender();
+    });
+    elements["capacidad-mensual"].addEventListener("blur", function () {
+      var value = parseCapacityInput(elements["capacidad-mensual"].value);
+      if (value !== null) { elements["capacidad-mensual"].value = formatInteger(value); }
+      calculateAndRender();
+    });
+    elements["btn-confirmar-propuesta"].addEventListener("click", confirmPaymentAgreement);
+    elements["mensualidades-propuestas"].addEventListener("change", function () {
+      markModified();
+      calculateAndRender();
+    });
     elements["fecha-matricula"].addEventListener("change", handleEnrollmentChange);
     elements["fecha-matricula"].addEventListener("focus", function () {
       refreshEnrollmentCalendar({ markModified: true });
@@ -5545,6 +5661,12 @@
       updateDateRange(true);
       calculateAndRender();
     });
+    elements["fecha-acreditacion-pago-inicial-estimada"].addEventListener("input", function () {
+      markModified();
+      updateDateRange(true);
+      calculateAndRender();
+    });
+    elements["fecha-acreditacion-pago-inicial-estimada"].addEventListener("focus", refreshAccreditationCalendar);
     elements["fecha-primera-cuota"].addEventListener("change", function () {
       markModified();
       calculateAndRender();
@@ -5653,6 +5775,7 @@
     });
     global.addEventListener("focus", function () {
       refreshEnrollmentCalendar({ markModified: true });
+      refreshAccreditationCalendar();
       maybeShowWhatsAppFollowup();
     });
   }
@@ -5669,6 +5792,7 @@
     populateSalesManagers("");
     populateTariffModels("");
     renderProductLabels();
+    populateCityZones();
     populateSites("");
     resetDependentTariffSelectors();
     renderCatalogUpdateLabel();
@@ -5685,6 +5809,7 @@
     global.setInterval(function () {
       refreshExpiration();
       refreshEnrollmentCalendar({ markModified: true });
+      refreshAccreditationCalendar();
     }, 30000);
   }
 
