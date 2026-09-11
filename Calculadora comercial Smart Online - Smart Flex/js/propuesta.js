@@ -411,10 +411,13 @@
   function prepararImpresion() {
     document.body.classList.add("imprimiendo-propuesta");
   }
-  function abrirVistaImpresion() {
+  function abrirVistaImpresionAlternativa() {
     prepararImpresion();
     const documento = obtenerDocumentoImpresion();
-    if (!documento) return;
+    if (!documento) {
+      document.body.classList.remove("imprimiendo-propuesta");
+      return;
+    }
     const destino = new URL("print.html", window.location.href);
 
     // Google Sites y otros contenedores cargan la aplicacion dentro de un
@@ -449,6 +452,51 @@
     }
     window.location.assign(destino.href);
   }
+  async function descargarPdf() {
+    const pagina = elemento(".propuesta-pagina");
+    if (!pagina) return;
+
+    // La impresion nativa suele ser bloqueada cuando la calculadora esta
+    // embebida en Google Sites. html2pdf genera y descarga el archivo desde
+    // el mismo clic del usuario, sin abrir una pestana ni invocar window.print.
+    if (typeof window.html2pdf !== "function") {
+      abrirVistaImpresionAlternativa();
+      return;
+    }
+
+    const boton = elemento("#imprimir-propuesta");
+    const textoOriginal = boton.textContent;
+    prepararImpresion();
+    pagina.dataset.nombreArchivo = buildPdfFilename(valorCampo("clienteNombre", "Cliente"));
+
+    try {
+      boton.disabled = true;
+      boton.textContent = "Generando PDF...";
+      await window.html2pdf().set({
+        margin: 0,
+        filename: pagina.dataset.nombreArchivo,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 1.6,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false,
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true },
+        pagebreak: { mode: ["css", "legacy"] }
+      }).from(pagina).save();
+    } catch (error) {
+      console.error("No fue posible generar el PDF directamente.", error);
+      abrirVistaImpresionAlternativa();
+    } finally {
+      document.body.classList.remove("imprimiendo-propuesta");
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
+    }
+  }
   function obtenerDocumentoImpresion() {
     const pagina = elemento(".propuesta-pagina");
     if (pagina) pagina.dataset.nombreArchivo = buildPdfFilename(valorCampo("clienteNombre", "Cliente"));
@@ -456,7 +504,7 @@
   }
   document.addEventListener("smart:cotizacion", function (evento) { cotizacion = evento.detail || null; });
   elemento("#imprimir-propuesta").addEventListener("click", function () {
-    abrirVistaImpresion();
+    descargarPdf();
   });
   formulario.addEventListener("input", actualizarDatosPersonales);
   elemento("#cerrar-propuesta").addEventListener("click", cerrar);
