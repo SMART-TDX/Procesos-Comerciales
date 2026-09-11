@@ -452,9 +452,96 @@
     }
     window.location.assign(destino.href);
   }
+  function crearIdCotizacion(fecha) {
+    const relleno = function (valor) { return String(valor).padStart(2, "0"); };
+    const marca = fecha.getFullYear() + relleno(fecha.getMonth() + 1) + relleno(fecha.getDate()) +
+      "-" + relleno(fecha.getHours()) + relleno(fecha.getMinutes()) + relleno(fecha.getSeconds());
+    const aleatorio = Math.random().toString(16).slice(2, 6).toUpperCase().padEnd(4, "0");
+    return "SMOF-" + marca + "-" + aleatorio;
+  }
+  function sumarValorBeneficios(beneficios) {
+    return (Array.isArray(beneficios) ? beneficios : []).reduce(function (total, beneficio) {
+      return total + (Number.isFinite(beneficio.valorComercial) ? beneficio.valorComercial : 0);
+    }, 0);
+  }
+  function payloadRegistroCotizacion() {
+    if (!cotizacion || !cotizacion.registro) return null;
+    const ahora = new Date();
+    const registro = cotizacion.registro;
+    const plan = Array.isArray(cotizacion.planPagos) ? cotizacion.planPagos : [];
+    const beneficios = beneficiosPresentables(cotizacion);
+    const cuotaInicial = Number(cotizacion.primeraCuota || (plan[0] && plan[0].valor) || 0);
+    const cuotaPosterior = Number((plan[1] && plan[1].valor) || 0);
+    const ultimaCuota = Number((plan.length > 1 && plan[plan.length - 1].valor) || 0);
+    const vencimiento = new Date(ahora.getTime() + 48 * 60 * 60 * 1000);
+    cotizacion._registroId = cotizacion._registroId || crearIdCotizacion(ahora);
+    return {
+      destino_pestana: "Smart Online / Smart Flex",
+      origen_formulario: "SMART_ONLINE_FLEX",
+      id_cotizacion: cotizacion._registroId,
+      fecha_generacion: ahora.toISOString(),
+      fecha_vencimiento: vencimiento.toISOString(),
+      nombre_cliente: valorCampo("clienteNombre", "No informado"),
+      celular_cliente: "",
+      correo_cliente: "",
+      nombre_comercial: valorCampo("asesorNombre", "No informado"),
+      correo_comercial: "",
+      whatsapp_comercial: valorCampo("asesorWhatsapp", ""),
+      nombre_jefe_ventas: "",
+      correo_jefe_ventas: "",
+      sede: "",
+      idioma: "INGLÉS",
+      linea: registro.linea === "SMART_FLEX" ? "Smart Flex" : "Smart Online",
+      modalidad_tarifaria: registro.tipoTarifa || "",
+      nivel_ingreso: registro.nivelIngreso || "",
+      plan_tarifario: registro.planId || "",
+      programa: registro.plan || (registro.linea === "SMART_ONLINE" ? registro.meses + " meses" : ""),
+      duracion_meses: registro.meses || "",
+      niveles_incluidos: Array.isArray(registro.niveles) ? registro.niveles.join(", ") : "",
+      horas_formacion: registro.horas || "",
+      condicion_comercial: registro.condicion || "",
+      forma_pago: registro.formaPago === "CONTADO" ? "CONTADO" : "FINANCIADO",
+      numero_cuotas: registro.cuotas || plan.length || 1,
+      valor_cuota_inicial: cuotaInicial,
+      saldo_financiar: Math.max(0, Number(registro.valorTotal || 0) - cuotaInicial),
+      valor_cuotas_posteriores: cuotaPosterior,
+      valor_ultima_cuota: ultimaCuota,
+      fecha_pago_inicial: cotizacion.fechaPago || "",
+      fecha_primera_cuota: cotizacion.segundaFecha || "",
+      valor_lista: Number(cotizacion.valorListaOficial || registro.valorFullPlan || 0),
+      porcentaje_descuento: Number(registro.descuento || 0),
+      valor_descuento: Number(cotizacion.ahorro || 0),
+      valor_final_contrato: Number(registro.valorTotal || 0),
+      valor_hora: Number(registro.valorHora || 0),
+      intensidad_mensual: Number(registro.intensidadMensual || 0),
+      beneficios: beneficios.map(function (beneficio) { return beneficio.nombrePresentacion || beneficio.nombre || beneficio.id; }),
+      valor_beneficios: sumarValorBeneficios(beneficios),
+      campana: cotizacion.campana ? (cotizacion.campana.nombre || cotizacion.campana.id || "") : "",
+      id_tarifa: registro.id || "",
+      estado: "VIGENTE",
+      fecha_registro: ahora.toISOString()
+    };
+  }
+  function registrarCotizacion() {
+    const configuracion = window.SMART_REGISTRO_COTIZACIONES || {};
+    const endpoint = String(configuracion.endpoint || "").trim();
+    if (!configuracion.activo || !endpoint || !cotizacion || cotizacion._registroEnviado) return false;
+    try {
+      const payload = payloadRegistroCotizacion();
+      if (!payload || !navigator.sendBeacon) return false;
+      const enviado = navigator.sendBeacon(endpoint, JSON.stringify(payload));
+      if (enviado) cotizacion._registroEnviado = true;
+      return enviado;
+    } catch (error) {
+      console.warn("No fue posible registrar la cotización.", error);
+      return false;
+    }
+  }
   async function descargarPdf() {
     const pagina = elemento(".propuesta-pagina");
     if (!pagina) return;
+
+    registrarCotizacion();
 
     // La impresion nativa suele ser bloqueada cuando la calculadora esta
     // embebida en Google Sites. html2pdf genera y descarga el archivo desde
