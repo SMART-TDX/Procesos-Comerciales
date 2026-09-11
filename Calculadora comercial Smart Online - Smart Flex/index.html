@@ -135,8 +135,15 @@
   <script src="js/configuracion-comercial.js"></script>
   <script src="js/motor-comercial.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.14.0/html2pdf.bundle.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';"></script>
-  <script src="js/configuracion-registro.js"></script>
-  <script src="js/propuesta.js"></script>
+  <script>
+    window.SMART_REGISTRO_COTIZACIONES = Object.freeze({
+      activo: true,
+      endpoint: "https://script.google.com/macros/s/AKfycbzxZjzW2cKBT9_oG11Duv8mhNYM_QlJv2z_WAL3hbBpdWwkgei0Ao79KCXqgS2FlLmV/exec",
+      destinoPestana: "Smart Online / Smart Flex",
+      version: "2026-09-11.4"
+    });
+  </script>
+  <script src="js/propuesta.js?v=20260911-4"></script>
   <script src="js/aplicacion.js"></script>
 </body>
 </html>
