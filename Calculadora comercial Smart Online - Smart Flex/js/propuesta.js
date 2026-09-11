@@ -405,7 +405,10 @@
 
   function abrir() {
     if (!cotizacion) return;
-    renderizar(); dialogo.showModal(); elemento("#cliente-nombre").focus();
+    renderizar();
+    registrarCotizacion("PREPARADA");
+    dialogo.showModal();
+    elemento("#cliente-nombre").focus();
   }
   function cerrar() { dialogo.close(); }
   function prepararImpresion() {
@@ -467,6 +470,7 @@
   function payloadRegistroCotizacion() {
     if (!cotizacion || !cotizacion.registro) return null;
     const ahora = new Date();
+    cotizacion._registroFechaGeneracion = cotizacion._registroFechaGeneracion || ahora.toISOString();
     const registro = cotizacion.registro;
     const plan = Array.isArray(cotizacion.planPagos) ? cotizacion.planPagos : [];
     const beneficios = beneficiosPresentables(cotizacion);
@@ -479,7 +483,7 @@
       destino_pestana: "Smart Online / Smart Flex",
       origen_formulario: "SMART_ONLINE_FLEX",
       id_cotizacion: cotizacion._registroId,
-      fecha_generacion: ahora.toISOString(),
+      fecha_generacion: cotizacion._registroFechaGeneracion,
       fecha_vencimiento: vencimiento.toISOString(),
       nombre_cliente: valorCampo("clienteNombre", "No informado"),
       celular_cliente: "",
@@ -522,16 +526,40 @@
       fecha_registro: ahora.toISOString()
     };
   }
-  function registrarCotizacion() {
+  function registrarCotizacion(etapa) {
     const configuracion = window.SMART_REGISTRO_COTIZACIONES || {};
     const endpoint = String(configuracion.endpoint || "").trim();
-    if (!configuracion.activo || !endpoint || !cotizacion || cotizacion._registroEnviado) return false;
+    const fase = etapa === "FINALIZADA" ? "FINALIZADA" : "PREPARADA";
+    if (!configuracion.activo || !endpoint || !cotizacion) return false;
+    cotizacion._registroEtapas = cotizacion._registroEtapas || {};
+    if (cotizacion._registroEtapas[fase]) return true;
     try {
       const payload = payloadRegistroCotizacion();
-      if (!payload || !navigator.sendBeacon) return false;
-      const enviado = navigator.sendBeacon(endpoint, JSON.stringify(payload));
-      if (enviado) cotizacion._registroEnviado = true;
-      return enviado;
+      if (!payload) return false;
+      payload.etapa_registro = fase;
+      const cuerpo = JSON.stringify(payload);
+      const nombreDestino = "smart-registro-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      const marco = document.createElement("iframe");
+      const formularioEnvio = document.createElement("form");
+      const campoPayload = document.createElement("input");
+      marco.name = nombreDestino;
+      marco.hidden = true;
+      formularioEnvio.method = "POST";
+      formularioEnvio.action = endpoint;
+      formularioEnvio.target = nombreDestino;
+      formularioEnvio.hidden = true;
+      campoPayload.type = "hidden";
+      campoPayload.name = "payload";
+      campoPayload.value = cuerpo;
+      formularioEnvio.appendChild(campoPayload);
+      document.body.append(marco, formularioEnvio);
+      cotizacion._registroEtapas[fase] = true;
+      formularioEnvio.submit();
+      window.setTimeout(function () {
+        formularioEnvio.remove();
+        marco.remove();
+      }, 15000);
+      return true;
     } catch (error) {
       console.warn("No fue posible registrar la cotización.", error);
       return false;
@@ -541,7 +569,7 @@
     const pagina = elemento(".propuesta-pagina");
     if (!pagina) return;
 
-    registrarCotizacion();
+    registrarCotizacion("FINALIZADA");
 
     // La impresion nativa suele ser bloqueada cuando la calculadora esta
     // embebida en Google Sites. html2pdf genera y descarga el archivo desde
