@@ -3566,7 +3566,63 @@
     preparedWhatsAppMessage = "";
     renderFinanceStatus();
     renderProposal();
+    registerGeneratedQuote();
     showToast(ensureFinalPeriod("Cotización generada. Vigente hasta el " + formatBogotaDateTime(quote.expiresAt)));
+  }
+
+  function registrationPayload() {
+    var share = currentWhatsAppMessageData(DEFAULT_SHARE_CONTEXT);
+    var trace = quote.tariffTrace || {};
+    var calculation = currentCalculation || {};
+    return {
+      id_cotizacion: quote.reference,
+      fecha_generacion: quote.generatedAt,
+      fecha_vencimiento: quote.expiresAt,
+      nombre_cliente: share.clientName,
+      celular_cliente: share.clientPhoneNormalized || "",
+      correo_cliente: share.clientEmail || "",
+      nombre_comercial: share.advisorName,
+      correo_comercial: "",
+      nombre_jefe_ventas: share.managerName || "",
+      correo_jefe_ventas: share.managerEmail || "",
+      sede: share.siteName,
+      idioma: share.languageName,
+      plan_tarifario: trace.modelo_tarifario_id || "",
+      modalidad: trace.modalidad_cliente || "",
+      programa: share.programName,
+      porcentaje_descuento: currentTariff ? Number(currentTariff.porcentaje_descuento_exacto || 0) : 0,
+      valor_descuento: share.savingsCop || 0,
+      valor_final_contrato: share.totalContractCop || 0,
+      forma_pago: share.isCash ? "CONTADO" : "FINANCIADO",
+      valor_cuota_inicial: share.initialCop || 0,
+      saldo_financiar: calculation.pendingBalanceCop || 0,
+      numero_cuotas: share.numberOfPayments || 1,
+      valor_cuotas_posteriores: share.regularMonthlyCop || 0,
+      valor_ultima_cuota: share.lastMonthlyCop || 0,
+      fecha_primera_cuota: elements["fecha-primera-cuota"].value || "",
+      beneficios: share.additionals || [],
+      estado: quote.status,
+      fecha_matricula: quote.enrollmentDate || "",
+      version_modelo: trace.modelo_tarifario_version || "",
+      fecha_registro: new Date().toISOString()
+    };
+  }
+
+  function registerGeneratedQuote() {
+    var config = global.SMART_REGISTRO_COTIZACIONES || {};
+    var endpoint = String(config.endpoint || "").trim();
+    if (!config.activo || !endpoint || endpoint.indexOf("__APPS_SCRIPT_") === 0) {
+      return false;
+    }
+    try {
+      var body = JSON.stringify(registrationPayload());
+      if (global.navigator && typeof global.navigator.sendBeacon === "function") {
+        return global.navigator.sendBeacon(endpoint, body);
+      }
+    } catch (error) {
+      console.warn("No fue posible registrar la cotización.", error);
+    }
+    return false;
   }
 
   function ensureCurrentQuote() {
