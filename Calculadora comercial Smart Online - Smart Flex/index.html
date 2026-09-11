@@ -115,7 +115,7 @@
 
   <dialog class="propuesta-dialog" id="propuesta-dialog" aria-labelledby="titulo-vista-previa">
     <div class="propuesta-shell">
-      <header class="propuesta-toolbar"><div><p class="eyebrow">Propuesta comercial</p><h2 id="titulo-vista-previa">Vista previa</h2></div><div class="propuesta-toolbar__acciones"><button type="button" class="boton-secundario" id="cerrar-propuesta">Volver a editar</button><button type="button" class="boton-principal" id="imprimir-propuesta" data-action="imprimir-propuesta">Imprimir o guardar como PDF</button></div></header>
+      <header class="propuesta-toolbar"><div><p class="eyebrow">Propuesta comercial</p><h2 id="titulo-vista-previa">Vista previa</h2></div><div class="propuesta-toolbar__acciones"><button type="button" class="boton-secundario" id="cerrar-propuesta">Volver a editar</button><button type="button" class="boton-principal" id="imprimir-propuesta" data-action="imprimir-propuesta">Descargar PDF</button></div></header>
       <div class="propuesta-workspace">
         <aside class="propuesta-datos" aria-labelledby="titulo-datos-propuesta"><h3 id="titulo-datos-propuesta">Personaliza tu propuesta</h3><form id="formulario-propuesta"><label for="cliente-nombre">Nombre del cliente</label><input id="cliente-nombre" name="clienteNombre" autocomplete="name"><label for="asesor-nombre">Nombre del Ejecutivo de Cuenta</label><input id="asesor-nombre" name="asesorNombre" autocomplete="name"><label for="asesor-whatsapp">WhatsApp / celular</label><input id="asesor-whatsapp" name="asesorWhatsapp" autocomplete="tel" inputmode="tel"></form></aside>
         <div class="propuesta-preview" id="propuesta-preview">
@@ -134,6 +134,7 @@
   <script src="js/config.js"></script>
   <script src="js/configuracion-comercial.js"></script>
   <script src="js/motor-comercial.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.14.0/html2pdf.bundle.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';"></script>
   <script src="js/propuesta.js"></script>
   <script src="js/aplicacion.js"></script>
 </body>
