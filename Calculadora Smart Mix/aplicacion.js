@@ -2453,7 +2453,6 @@
     });
     showValidation(currentCalculation.errors);
     renderProposal();
-    registerSmartMixQuote("PREPARADA");
     return currentCalculation.valid && !capacityBlocksGeneration();
   }
 
@@ -2786,6 +2785,7 @@
     preparedWhatsAppMessage = "";
     showValidation([]);
     renderProposal();
+    registerSmartMixQuote("PREPARADA");
     showToast(ensureFinalPeriod("Cotización generada. Vigente hasta el " + formatBogotaDateTime(quote.expiresAt)));
   }
 
@@ -2838,10 +2838,15 @@
     var payload = smartMixRegistrationPayload(phase);
     if (!payload) { return false; }
     try {
+      var body = JSON.stringify(payload);
+      if (global.navigator && typeof global.navigator.sendBeacon === "function") {
+        var sent = global.navigator.sendBeacon(endpoint, body);
+        if (sent) { quote.registrationStages[phase] = true; return true; }
+      }
       var targetName = "smart-mix-registro-" + Date.now() + "-" + Math.random().toString(16).slice(2);
       var frame = document.createElement("iframe"); var form = document.createElement("form"); var input = document.createElement("input");
       frame.name = targetName; frame.hidden = true; form.method = "POST"; form.action = endpoint; form.target = targetName; form.hidden = true;
-      input.type = "hidden"; input.name = "payload"; input.value = JSON.stringify(payload); form.appendChild(input);
+      input.type = "hidden"; input.name = "payload"; input.value = body; form.appendChild(input);
       document.body.append(frame, form); quote.registrationStages[phase] = true; form.submit();
       global.setTimeout(function () { form.remove(); frame.remove(); }, 15000);
       return true;
