@@ -2453,6 +2453,7 @@
     });
     showValidation(currentCalculation.errors);
     renderProposal();
+    registerSmartMixQuote("PREPARADA");
     return currentCalculation.valid && !capacityBlocksGeneration();
   }
 
@@ -2786,6 +2787,65 @@
     showValidation([]);
     renderProposal();
     showToast(ensureFinalPeriod("Cotización generada. Vigente hasta el " + formatBogotaDateTime(quote.expiresAt)));
+  }
+
+  function smartMixRegistrationPayload(stage) {
+    if (!quote.reference || !quote.generatedAt || !quote.expiresAt || !currentTariff || !currentCalculation) { return null; }
+    var manager = selectedSalesManager();
+    var snapshots = Array.isArray(quote.additionalSnapshot) ? quote.additionalSnapshot : [];
+    var listValue = Number(currentTariff.valor_full_oficial_cop || 0);
+    var finalValue = Number(currentTariff.valor_total_oficial_cop || 0);
+    var initialValue = Number(currentCalculation.initialCop || 0);
+    return {
+      destino_pestana: "Smart Mix", origen_formulario: "SMART_MIX", etapa_registro: stage,
+      id_cotizacion: quote.reference, fecha_generacion: quote.generatedAt, fecha_vencimiento: quote.expiresAt,
+      nombre_cliente: elements.cliente.value.trim(), celular_cliente: normalizedClientPhone() || "",
+      correo_cliente: elements["cliente-correo"].value.trim(), nombre_comercial: elements.asesor.value.trim(),
+      correo_comercial: "", regional_ciudad: elements["jefe-ventas-regional"].value || elements["ciudad-zona"].value || "",
+      nombre_jefe_ventas: manager ? manager.nombre : "", correo_jefe_ventas: manager ? manager.correo : "",
+      sede: currentSiteName(), idioma: currentTariff.idioma_nombre || currentLanguageName(),
+      plan_tarifario: currentTariff.plan_id || "", programa: clientProgramDisplayName(currentTariff),
+      condicion_comercial: currentTariff.condicion_comercial || "",
+      modulos_incluidos: Array.isArray(currentTariff.modulos_incluidos) ? currentTariff.modulos_incluidos.join(", ") : (currentTariff.modulos_incluidos || ""),
+      horas_academicas: Number(currentTariff.horas_academicas || 0),
+      numero_pagos: Number(currentCalculation.rows.length || currentTariff.numero_pagos || 0),
+      forma_pago: currentTariff.numero_pagos === 1 ? "CONTADO" : "FINANCIADO",
+      valor_lista: listValue, porcentaje_descuento: Number(currentTariff.porcentaje_descuento_exacto || 0),
+      valor_descuento: Math.max(0, listValue - finalValue), valor_final_contrato: finalValue,
+      valor_cuota_inicial: initialValue,
+      saldo_financiar: Number(currentCalculation.pendingBalanceCop || Math.max(0, finalValue - initialValue)),
+      valor_cuotas_posteriores: Number(currentCalculation.regularMonthlyCop || 0),
+      valor_ultima_cuota: Number(currentCalculation.lastMonthlyCop || 0),
+      fecha_matricula: elements["fecha-matricula"].value || "",
+      fecha_acreditacion_pago_inicial: elements["fecha-acreditacion-pago-inicial-estimada"].value || "",
+      fecha_primera_cuota: elements["fecha-primera-cuota"].value || "",
+      capacidad_mensual: Number(elements["capacidad-mensual"].value || 0),
+      mensualidades_deseadas: Number(elements["mensualidades-deseadas"].value || 0),
+      beneficios: snapshots.map(function (item) { return item.titulo_cliente || ""; }),
+      valor_beneficios: snapshots.reduce(function (total, item) { return total + Number(item.valueCop || 0); }, 0),
+      campana: quote.campaignId || "", observacion: elements.observacion.value.trim(),
+      estado: quote.status, fecha_registro: new Date().toISOString()
+    };
+  }
+
+  function registerSmartMixQuote(stage) {
+    var configuration = global.SMART_REGISTRO_COTIZACIONES || {};
+    var endpoint = String(configuration.endpoint || "").trim();
+    var phase = stage === "FINALIZADA" ? "FINALIZADA" : "PREPARADA";
+    if (!configuration.activo || !endpoint) { return false; }
+    quote.registrationStages = quote.registrationStages || {};
+    if (quote.registrationStages[phase]) { return true; }
+    var payload = smartMixRegistrationPayload(phase);
+    if (!payload) { return false; }
+    try {
+      var targetName = "smart-mix-registro-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+      var frame = document.createElement("iframe"); var form = document.createElement("form"); var input = document.createElement("input");
+      frame.name = targetName; frame.hidden = true; form.method = "POST"; form.action = endpoint; form.target = targetName; form.hidden = true;
+      input.type = "hidden"; input.name = "payload"; input.value = JSON.stringify(payload); form.appendChild(input);
+      document.body.append(frame, form); quote.registrationStages[phase] = true; form.submit();
+      global.setTimeout(function () { form.remove(); frame.remove(); }, 15000);
+      return true;
+    } catch (error) { console.warn("No fue posible registrar la cotizaciÃ³n Smart Mix.", error); return false; }
   }
 
   function currentNegotiationSignature() {
@@ -4841,6 +4901,7 @@
       showToast("Generando y descargando el PDF...");
       try {
         await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
+        registerSmartMixQuote("FINALIZADA");
         cleanupPrintSession("descarga_pdf_directa");
         showToast("PDF descargado correctamente.");
       } catch (error) {
@@ -4858,6 +4919,7 @@
       }
       try {
         if (!ensureCurrentQuote()) { cleanupPrintSession("cotizacion_modificada_antes_de_imprimir"); return; }
+        registerSmartMixQuote("FINALIZADA");
         global.print();
       } catch (error) {
         showToast("No fue posible abrir el diálogo de impresión. Reintenta la impresión.");
