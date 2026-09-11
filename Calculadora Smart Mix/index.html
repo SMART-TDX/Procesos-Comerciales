@@ -719,10 +719,17 @@
 
   <script src="configuracion_smart_mix.js"></script>
   <script src="configuracion_jefes_ventas.js"></script>
-  <script src="configuracion_registro.js?v=20260911-2"></script>
+  <script>
+    window.SMART_REGISTRO_COTIZACIONES = Object.freeze({
+      activo: true,
+      endpoint: "https://script.google.com/macros/s/AKfycbzxZjzW2cKBT9_oG11Duv8mhNYM_QlJv2z_WAL3hbBpdWwkgei0Ao79KCXqgS2FlLmV/exec",
+      destinoPestana: "Smart Mix",
+      version: "2026-09-11.3"
+    });
+  </script>
   <script src="tarifas_smart_mix.js"></script>
   <script src="smart_mix.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.14.0/html2pdf.bundle.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';"></script>
-  <script src="aplicacion.js?v=20260911-2"></script>
+  <script src="aplicacion.js?v=20260911-3"></script>
 </body>
 </html>
