@@ -369,12 +369,9 @@
       return result;
     }
     var balance = tariff.valor_total_oficial_cop - proposedInitial;
-    var regular = roundDivideCOP(balance, remaining);
-    var last = balance - (regular * (remaining - 1));
-    if (last < 0) {
-      regular = Math.floor(balance / remaining);
-      last = balance - (regular * (remaining - 1));
-    }
+    var amounts = global.SMART_MIX_CORE.monthlyAgreement(balance, remaining);
+    var regular = amounts.regular;
+    var last = amounts.last;
     var runningBalance = tariff.valor_total_oficial_cop;
     var rows = [];
     runningBalance -= proposedInitial;
@@ -755,8 +752,7 @@
       "*Sede:* " + data.siteName,
       "Clases presenciales, virtuales o alternando ambas según tu preferencia.", "",
       data.isCash ? "*TU INVERSIÓN DE CONTADO*" : "*TU PLAN DE PAGO*",
-      "*Condición comercial:* " + data.conditionName,
-      "*Plan oficial:* " + (data.isCash ? "contado." : data.officialPayments + " pagos máximos, incluida la cuota inicial.")
+      "*Condición comercial:* " + data.conditionName
     ];
     if (data.isCash) {
       lines.push("*Valor de contado:* " + formatCOP(data.totalContractCop));
@@ -826,8 +822,7 @@
   function commercialShareLines(data) {
     var lines = ["Módulos: " + data.programName + " · " + data.academicHours + " horas.",
       "Clases presenciales, virtuales o alternando ambas según tu preferencia.",
-      "Sede: " + data.siteName, "Condición comercial: " + data.conditionName,
-      "Plan oficial: " + (data.officialPayments === 1 ? "contado" : data.officialPayments + " pagos máximos") + "."];
+      "Sede: " + data.siteName, "Condición comercial: " + data.conditionName];
     if (data.isCash) { lines.push("Pago único: " + formatCOP(data.totalContractCop) + "."); }
     else {
       lines.push("Cuota inicial propuesta: " + formatCOP(data.initialCop) + ".",
@@ -1401,7 +1396,8 @@
       "cliente", "cliente-pais", "cliente-celular", "cliente-indicativo-otro-row", "cliente-indicativo-otro",
       "cliente-celular-error", "cliente-correo", "cliente-correo-error",
       "asesor", "jefe-ventas-regional", "jefe-ventas", "jefe-ventas-ayuda", "jefe-ventas-error",
-      "sede", "observacion", "plan", "condicion",
+      "ciudad-zona", "sede", "observacion", "plan", "condicion",
+      "capacidad-mensual", "negotiation-panel", "capacity-status", "capacity-recommendation", "btn-confirmar-propuesta", "selected-payment-summary",
       "initial-payment-date-error", "numero-pagos", "cuota-propuesta", "mensualidades-deseadas", "shorter-plan-warning", "fecha-matricula", "fecha-acreditacion-pago-inicial-estimada",
       "fecha-primera-cuota", "matricula-fecha-visible", "matricula-fecha-ayuda",
       "matricula-fecha-error", "vigencia-estimada", "finance-empty-help", "first-date-range", "validation-alert",
@@ -1556,13 +1552,13 @@
 
   function selectedSite() {
     return sites.find(function (site) {
-      return site.sede_id === elements.sede.value;
+      return site.sede_id === elements.sede.value && site.sede_activa;
     }) || null;
   }
 
   function updateManagerRequirement() {
     var valid = Boolean(salesManagerValidation.valida && salesManagerHasValidEmail(selectedSalesManager()));
-    byId("btn-generar").disabled = !catalogsReady || !valid;
+    byId("btn-generar").disabled = !catalogsReady || !valid || capacityBlocksGeneration();
     byId("btn-generar").setAttribute("aria-disabled", String(byId("btn-generar").disabled));
     byId("generation-manager-help").hidden = valid;
     document.querySelectorAll(".generated-action, .share-action").forEach(function(button) {
@@ -1687,8 +1683,16 @@
     return resolveCommercialContext(currentLanguageId(), elements.sede.value, sites);
   }
 
+  function populateCityZones() {
+    replaceOptions(elements["ciudad-zona"], global.SMART_MIX_SITE_GROUPS, "id", "nombre", "", "Selecciona una ciudad / zona");
+  }
+
   function populateSites(preferred) {
-    replaceOptions(elements.sede, sites.filter(function(s) { return s.sede_activa; }), "sede_id", "nombre_sede", preferred || "", "Selecciona una sede");
+    var group = global.SMART_MIX_SITE_GROUPS.find(function(item) { return item.id === elements["ciudad-zona"].value; });
+    var filtered = group ? group.sedes.map(function(id) { return sites.find(function(s) { return s.sede_id === id && s.sede_activa; }); }).filter(Boolean) : [];
+    var labels = global.SMART_MIX_SITE_LABELS || {};
+    replaceOptions(elements.sede, filtered.map(function(s) { return {id:s.sede_id, label:labels[s.sede_id] || s.nombre_sede}; }), "id", "label", preferred || "", group ? "Selecciona una sede" : "Selecciona primero una ciudad / zona");
+    elements.sede.disabled = !group;
     return currentCommercialContext();
   }
 
@@ -1737,7 +1741,7 @@
 
   function updateProgressiveForm(focusStep) {
     var site = Boolean(selectedSite()), condition = Boolean(elements.condicion.value), plan = Boolean(elements.plan.value), payment = Boolean(elements["numero-pagos"].value);
-    setProgressiveFieldState(1, true, siteValidation.valida);
+    setProgressiveFieldState(1, true, siteValidation.valida && Boolean(elements["ciudad-zona"].value));
     setProgressiveFieldState(2, site, true);
     setProgressiveFieldState(3, site && condition, true);
     setProgressiveFieldState(4, site && condition && plan, true);
@@ -2237,6 +2241,8 @@
   function clearCalculatedProposal() {
     currentTariff = null;
     currentCalculation = null;
+    elements["capacidad-mensual"].value = "";
+    clearNegotiationPresentation();
     elements["mensualidades-deseadas"].replaceChildren();
     elements["mensualidades-deseadas"].disabled = true;
     elements["shorter-plan-warning"].textContent = "";
@@ -2320,16 +2326,90 @@
     elements["validation-alert"].textContent = list.join(" ");
   }
 
+  function currentMonthlyCapacity() {
+    var text = elements["capacidad-mensual"].value.trim();
+    return /^\$?\s*(?:\d+|\d{1,3}(?:\.\d{3})+)\s*$/.test(text) ? parseCOPInput(text) : null;
+  }
+
+  function currentNegotiation() {
+    return global.SMART_MIX_CORE.negotiationOptions(currentTariff,
+      parseCOPInput(elements["cuota-propuesta"].value), currentMonthlyCapacity(), mixTariffs);
+  }
+
+  function capacityBlocksGeneration() {
+    if (!currentTariff || currentTariff.numero_pagos === 1 || !elements["capacidad-mensual"].value.trim()) { return false; }
+    var state = currentNegotiation();
+    var selected = state.options.find(function(option) { return option.months === Number(elements["mensualidades-deseadas"].value); });
+    return !state.hasCapacity || Boolean(selected && !selected.fits);
+  }
+
+  function clearNegotiationPresentation() {
+    ["negotiation-panel", "capacity-status", "capacity-recommendation", "btn-confirmar-propuesta", "selected-payment-summary"].forEach(function(id) {
+      elements[id].hidden = true;
+      if (id !== "negotiation-panel") { elements[id].textContent = ""; }
+    });
+    elements["capacity-status"].className = "capacity-status";
+    elements["capacidad-mensual"].setAttribute("aria-invalid", "false");
+  }
+
   function updateFlexibleOptions() {
     var input = elements["mensualidades-deseadas"];
     var previous = input.value, hadOptions = input.options.length > 1;
     var flex = global.SMART_MIX_CORE.flexibleTerm(currentTariff, parseCOPInput(elements["cuota-propuesta"].value), mixTariffs);
-    var options = flex.options.map(function(n) { return {id:n,label:n + (n === 1 ? " mensualidad" : " mensualidades")}; });
-    replaceOptions(input, options, "id", "label", previous || (!hadOptions && options.length ? String(options[0].id) : ""), "Selecciona las mensualidades");
+    var state = currentNegotiation();
+    var options = state.options.map(function(option) {
+      return {id:option.months, label:option.payments + " pagos totales · " + option.months +
+        (option.months === 1 ? " mensualidad · " : " mensualidades · ") + formatCOP(option.monthly) + " aprox." +
+        (state.hasCapacity ? (option.fits ? " · Se ajusta" : " · Supera capacidad") : "") +
+        (state.recommended === option ? " · RECOMENDADO" : "")};
+    });
+    replaceOptions(input, options, "id", "label", previous || (!hadOptions && options.length ? String(options[0].id) : ""), "Selecciona los pagos");
     input.disabled = !flex.valid || currentTariff.numero_pagos === 1;
     elements["shorter-plan-warning"].textContent = flex.warning;
     elements["shorter-plan-warning"].hidden = !flex.warning;
     elements["shorter-plan-warning"].classList.toggle("strong-warning", flex.warningLevel === "strong");
+    clearNegotiationPresentation();
+    if (currentTariff.numero_pagos === 1 || !options.length) { return; }
+    var selected = state.options.find(function(option) { return option.months === Number(input.value); });
+    var invalid = Boolean(elements["capacidad-mensual"].value.trim()) && !state.hasCapacity;
+    var status = elements["capacity-status"], recommendation = elements["capacity-recommendation"], button = elements["btn-confirmar-propuesta"];
+    elements["negotiation-panel"].hidden = false;
+    elements["capacidad-mensual"].setAttribute("aria-invalid", String(invalid));
+    if (invalid || (selected && state.hasCapacity)) {
+      status.hidden = false;
+      status.classList.add(!invalid && selected.fits ? "is-viable" : "is-over-capacity");
+      status.textContent = invalid ? "Ingresa una capacidad mensual válida, mayor que cero, en pesos enteros."
+        : selected.fits ? "Esta alternativa se ajusta a la capacidad indicada."
+        : "Esta alternativa supera la capacidad indicada. Puedes confirmar una nueva capacidad con el cliente.";
+    }
+    if (state.hasCapacity) {
+      recommendation.hidden = false;
+      recommendation.textContent = state.recommended
+        ? "Con la capacidad mensual indicada, la alternativa más corta viable es de " + state.recommended.payments + " pagos."
+        : "Ninguna alternativa se ajusta todavía a la capacidad indicada. La opción de menor mensualidad es de " +
+          state.lowest.payments + " pagos, aproximadamente " + formatCOP(state.lowest.monthly) + " mensuales.";
+    }
+    button.hidden = !selected || invalid;
+    if (selected) {
+      elements["selected-payment-summary"].hidden = false;
+      elements["selected-payment-summary"].textContent = selected.payments + " pagos totales · " + selected.months +
+        (selected.months === 1 ? " mensualidad · " : " mensualidades · ") + formatCOP(selected.monthly) + " aprox.";
+      button.textContent = state.hasCapacity && !selected.fits
+        ? "Aceptar hasta " + formatCOP(selected.required) + " mensuales y confirmar " + selected.payments + " pagos"
+        : "Confirmar propuesta de " + selected.payments + " pagos";
+    }
+  }
+
+  function confirmNegotiation() {
+    if (!currentTariff) { return; }
+    var state = currentNegotiation();
+    var selected = state.options.find(function(option) { return option.months === Number(elements["mensualidades-deseadas"].value); });
+    if (!selected || (elements["capacidad-mensual"].value.trim() && !state.hasCapacity)) { return; }
+    if (state.hasCapacity && !selected.fits) {
+      elements["capacidad-mensual"].value = formatInteger(selected.required);
+    }
+    markModified();
+    if (calculateAndRender()) { showToast("Propuesta de " + selected.payments + " pagos confirmada. Completa los datos y genera la cotización."); }
   }
 
   function calculateAndRender() {
@@ -2365,14 +2445,15 @@
       initialCop: isCash
         ? currentTariff.valor_total_oficial_cop
         : parseCOPInput(proposedText),
-      enrollmentDate: elements["fecha-matricula"].value,
+      // Solo la proyección usa hoy si falta matrícula; la generación valida la fecha elegida.
+      enrollmentDate: elements["fecha-matricula"].value || todayBogotaISO(),
       accreditationDate: elements["fecha-acreditacion-pago-inicial-estimada"].value,
       firstMonthlyDate: elements["fecha-primera-cuota"].value,
       monthlyCount: Number(elements["mensualidades-deseadas"].value)
     });
     showValidation(currentCalculation.errors);
     renderProposal();
-    return currentCalculation.valid;
+    return currentCalculation.valid && !capacityBlocksGeneration();
   }
 
   function renderPaymentRows(target, rows, compact) {
@@ -2455,7 +2536,7 @@
     setBoundText("suma-pagos", calculationValid ? formatCOP(calculation.sumPaymentsCop) : "—");
     setBoundText("diferencia", calculationValid ? formatCOP(calculation.differenceCop) : "—");
 
-    elements["commercial-message"].hidden = !message;
+    elements["commercial-message"].hidden = true; // Un único estado principal de negociación.
     elements["commercial-message"].textContent = message;
     elements["client-commercial-message"].hidden = !message;
     elements["client-commercial-message"].textContent = message;
@@ -2708,7 +2789,7 @@
   }
 
   function currentNegotiationSignature() {
-    return JSON.stringify(["cliente","cliente-pais","cliente-indicativo-otro","cliente-celular","cliente-correo","asesor","observacion","sede","condicion","plan","numero-pagos","cuota-propuesta","mensualidades-deseadas","fecha-matricula","fecha-acreditacion-pago-inicial-estimada","fecha-primera-cuota"].map(function(id){ return elements[id].value; }));
+    return JSON.stringify(["cliente","cliente-pais","cliente-indicativo-otro","cliente-celular","cliente-correo","asesor","observacion","ciudad-zona","sede","condicion","plan","numero-pagos","cuota-propuesta","capacidad-mensual","mensualidades-deseadas","fecha-matricula","fecha-acreditacion-pago-inicial-estimada","fecha-primera-cuota"].map(function(id){ return elements[id].value; }));
   }
 
   function ensureCurrentQuote() {
@@ -4802,6 +4883,7 @@
     populateSalesManagers("");
     elements.observacion.value = "";
     renderProductLabels();
+    populateCityZones();
     populateSites("");
     resetDependentTariffSelectors();
     var today = todayBogotaISO();
@@ -4828,6 +4910,16 @@
   }
 
   function bindEvents() {
+    elements["ciudad-zona"].addEventListener("change", function() {
+      markModified(); populateSites(""); resetDependentTariffSelectors(); showValidation([]); updateProgressiveForm(1);
+    });
+    elements["capacidad-mensual"].addEventListener("input", function() { markModified(); calculateAndRender(); });
+    elements["capacidad-mensual"].addEventListener("blur", function() {
+      var value = currentMonthlyCapacity();
+      if (value !== null) { elements["capacidad-mensual"].value = formatInteger(value); }
+      calculateAndRender();
+    });
+    elements["btn-confirmar-propuesta"].addEventListener("click", confirmNegotiation);
     elements.sede.addEventListener("change", handleSiteChange);
     elements.plan.addEventListener("change", handlePlanChange);
     elements.condicion.addEventListener("change", handleConditionChange);
@@ -4972,6 +5064,7 @@
     populateSalesManagerRegions("");
     populateSalesManagers("");
     renderProductLabels();
+    populateCityZones();
     populateSites("");
     resetDependentTariffSelectors();
     renderCatalogUpdateLabel();

@@ -55,6 +55,25 @@
     }
     return result;
   }
+  // La conciliación es compartida por el calendario y la referencia de negociación.
+  function monthlyAgreement(balance, months) {
+    var regular = roundDivide(balance, months);
+    var last = balance - regular * (months - 1);
+    if (last < 0) { regular = Math.floor(balance / months); last = balance - regular * (months - 1); }
+    return { regular: regular, last: last, required: Math.max(regular, last) };
+  }
+  function negotiationOptions(tariff, initial, capacity, catalog) {
+    var flex = flexibleTerm(tariff, initial, catalog);
+    var hasCapacity = Number.isSafeInteger(capacity) && capacity > 0;
+    var options = flex.options.map(function(months) {
+      var amounts = monthlyAgreement(tariff.valor_total_oficial_cop - initial, months);
+      return { months: months, payments: months + 1, monthly: amounts.regular,
+        last: amounts.last, required: amounts.required, fits: hasCapacity ? amounts.required <= capacity : null };
+    });
+    var viable = options.filter(function(option) { return option.fits; }).sort(function(a,b) { return a.months - b.months; });
+    var lowest = options.slice().sort(function(a,b) { return a.required - b.required || a.months - b.months; });
+    return { options: options, recommended: viable[0] || null, lowest: lowest[0] || null, hasCapacity: hasCapacity };
+  }
   function linguaskillEligible(tariff) {
     return Boolean(tariff && tariff.numero_modulos >= 2 &&
       tariff.modulos_incluidos.some(function (module) { return ["Flow", "Plus", "Pro"].includes(module); }));
@@ -79,6 +98,7 @@
     return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors), counts: { total: keys.size, combinaciones: packages.size } });
   }
   global.SMART_MIX_CORE = Object.freeze({ CONDITIONS: CONDITIONS, roundDivide: roundDivide,
-    alternatives: alternatives, flexibleTerm: flexibleTerm, linguaskillEligible: linguaskillEligible,
+    alternatives: alternatives, flexibleTerm: flexibleTerm, monthlyAgreement: monthlyAgreement,
+    negotiationOptions: negotiationOptions, linguaskillEligible: linguaskillEligible,
     validateCatalog: validateCatalog });
 })(typeof window !== "undefined" ? window : globalThis);

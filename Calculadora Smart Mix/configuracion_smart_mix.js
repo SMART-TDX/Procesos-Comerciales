@@ -352,7 +352,7 @@ var sites = [
     "ciudad": "Medellín",
     "departamento": "Antioquia",
     "grupo_operativo": "MEDELLIN_ANTIOQUIA",
-    "sede_activa": true
+    "sede_activa": false
   },
   {
     "sede_id": "ANT_TIERRAGRO",
@@ -451,11 +451,33 @@ var sites = [
     "sede_activa": true
   }
 ];
+// Filtro de presentación, independiente de las reglas comerciales.
+var groupLabels = {
+  BOGOTA_CUNDINAMARCA: "Bogotá / Cundinamarca", MEDELLIN_ANTIOQUIA: "Medellín / Antioquia",
+  SANTANDER: "Bucaramanga / Santander", REG_ARMENIA: "Armenia", REG_CARNAVAL: "Barranquilla",
+  REG_CALI: "Cali", REG_GUACARI: "Sincelejo", REG_IBAGUE: "Ibagué", REG_MANIZALES: "Manizales",
+  REG_PEREIRA: "Pereira", REG_VILLAVICENCIO: "Villavicencio"
+};
+var collator = new Intl.Collator("es", { numeric: true, sensitivity: "base" });
+var groups = [];
+sites.filter(function(site) { return site.sede_activa; }).forEach(function(site) {
+  var id = site.grupo_operativo === "REGIONALES" ? site.sede_id : site.grupo_operativo;
+  var group = groups.find(function(item) { return item.id === id; });
+  if (!group) { group = { id: id, nombre: groupLabels[id] || site.ciudad || site.nombre_sede, sedes: [] }; groups.push(group); }
+  group.sedes.push(site.sede_id);
+});
+groups.sort(function(a,b) { return collator.compare(a.nombre,b.nombre); });
+groups.forEach(function(group) {
+  group.sedes.sort(function(a,b) { return collator.compare(sites.find(function(s) {return s.sede_id === a;}).nombre_sede, sites.find(function(s) {return s.sede_id === b;}).nombre_sede); });
+  Object.freeze(group.sedes); Object.freeze(group);
+});
+global.SMART_MIX_SITE_GROUPS = Object.freeze(groups);
+global.SMART_MIX_SITE_LABELS = Object.freeze({ ANT_TIERRAGRO: "Tierragro Bello" });
 sites.forEach(Object.freeze);
 global.SMART_SEDES = Object.freeze(sites);
-global.SMART_SEDES_META = Object.freeze({version:"2026-09-05",fecha_actualizacion_disponibilidad:"2026-08-04",total_sedes:sites.length});
+global.SMART_SEDES_META = Object.freeze({version:"2026-09-10",fecha_actualizacion_disponibilidad:"2026-09-10",total_sedes:sites.length});
 var ids = new Set(sites.map(function(s){return s.sede_id;}));
-global.SMART_SEDES_VALIDACION = Object.freeze({valida:sites.length===56 && ids.size===sites.length,errores:[],resumen:{total:sites.length,activas:sites.length}});
+global.SMART_SEDES_VALIDACION = Object.freeze({valida:sites.length===56 && ids.size===sites.length,errores:[],resumen:{total:sites.length,activas:sites.filter(function(s){return s.sede_activa;}).length}});
 })(typeof window !== "undefined" ? window : globalThis);
 
 /* Configuración comercial de adicionales del programa Smart Mix 2026. */

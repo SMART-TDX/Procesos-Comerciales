@@ -156,8 +156,12 @@
             <div id="progressive-completed-choices" class="progressive-completed-choices" aria-label="Selecciones completadas"></div>
           </div>
           <div id="progressive-program-form" class="form-grid progressive-form">
+            <label class="field">
+              <span>Ciudad / zona</span><select id="ciudad-zona" class="quote-input" required></select>
+              <small>Selecciona la ciudad o zona para ver sus sedes.</small>
+            </label>
             <label id="progressive-field-site" class="field progressive-field" data-progressive-step="1">
-              <span>Sede</span><select id="sede" class="quote-input" required></select>
+              <span>Sede</span><select id="sede" class="quote-input" required disabled></select>
               <small>Disponible en todas las sedes activas a nivel nacional.</small>
             </label>
             <label id="progressive-field-condition" class="field progressive-field" data-progressive-step="2" hidden>
@@ -200,10 +204,21 @@
               <small id="cuota-help">Ingresa el valor acordado con el cliente.</small>
             </label>
             <label class="field flexible-term-field">
-              <span>Mensualidades deseadas</span>
+              <span>¿Cuánto puede pagar mensualmente?</span>
+              <div class="money-input"><span>$</span><input id="capacidad-mensual" class="quote-input" type="text" inputmode="numeric" autocomplete="off" placeholder="Ingresa una referencia mensual" aria-describedby="capacity-help"></div>
+              <small id="capacity-help">Referencia para negociar. La mensualidad de la propuesta se calcula según los pagos elegidos.</small>
+            </label>
+            <label class="field flexible-term-field">
+              <span>¿En cuántos pagos quieres organizar la propuesta?</span>
               <select id="mensualidades-deseadas" class="quote-input" disabled aria-describedby="flexible-term-help"></select>
+              <small id="selected-payment-summary" class="selected-payment-summary" aria-live="polite" hidden></small>
               <small id="flexible-term-help">Las opciones se actualizan con la cuota inicial propuesta. El precio de la tarifa se conserva.</small>
             </label>
+            <div id="negotiation-panel" class="no-print" hidden>
+              <p id="capacity-status" class="capacity-status" role="status" aria-live="polite" hidden></p>
+              <p id="capacity-recommendation" class="capacity-recommendation" hidden></p>
+              <button id="btn-confirmar-propuesta" class="button button-primary negotiation-confirm" type="button" hidden></button>
+            </div>
             <p id="shorter-plan-warning" class="commercial-warning no-print" role="status" hidden></p>
             <p id="finance-empty-help" class="finance-empty-help">Define la cuota inicial acordada para calcular las mensualidades.</p>
           </div>
@@ -452,7 +467,7 @@
           <span>Forma de pago</span>
           <h3>TU PLAN DE PAGO</h3>
         </div>
-        <p class="mix-official-plan">Plan oficial: <b data-bind="plan-oficial">—</b> · Condición: <b data-bind="condicion">—</b></p>
+        <p class="mix-official-plan">Condición: <b data-bind="condicion">—</b></p>
         <p class="payment-method-label" data-bind="forma-pago">Pago de contado</p>
         <div class="client-payment-cards">
           <div class="client-payment-hero">

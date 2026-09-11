@@ -3330,6 +3330,15 @@ body.cash-payment-mode .client-price-grid {
 .mix-modality { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); }
 .mix-official-plan { font-size: 12px; line-height: 1.5; color: var(--ink-soft); }
 .flexible-term-field { margin-top: 18px; }
+.capacity-status { margin: 14px 0 8px; padding: 12px 14px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.capacity-status.is-viable { background: #edf8f0; color: #216039; border-left: 3px solid #287d46; }
+.capacity-status.is-over-capacity { background: #fff1f0; color: #8c2119; border-left: 3px solid #b42318; }
+.capacity-recommendation { margin: 10px 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
+.negotiation-confirm { width: 100%; margin-top: 10px; white-space: normal; }
+.selected-payment-summary { display: none; }
+@media (max-width: 600px) {
+  .selected-payment-summary:not([hidden]) { display: block; color: var(--ink); font-weight: 600; line-height: 1.6; }
+}
 .commercial-warning { border-left: 3px solid #a45a00; padding: 12px 14px; background: #fff7e8; color: #754000; font-size: 13px; line-height: 1.5; }
 .commercial-warning.strong-warning { border-left-color: #b42318; background: #fff1f0; color: #8c2119; }
 @media (max-width: 460px) { .mix-official-plan { overflow-wrap: anywhere; } }
