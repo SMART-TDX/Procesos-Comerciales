@@ -3496,6 +3496,38 @@
     downloadPdfDirect(buildPdfFileName(data));
   }
 
+  // html2pdf puede incluir los nodos usados durante la medición del documento.
+  // Para la descarga tomamos exclusivamente las hojas finales ya construidas,
+  // evitando que se creen páginas vacías antes de la cotización.
+  function createPdfExportRoot(session) {
+    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+    if (!sheets.length) {
+      throw new Error("No se encontraron páginas para exportar.");
+    }
+
+    var exportRoot = document.createElement("div");
+    exportRoot.className = "pdf-export-root";
+    exportRoot.setAttribute("aria-hidden", "true");
+    Object.assign(exportRoot.style, {
+      position: "fixed",
+      top: "0",
+      left: "-100000px",
+      zIndex: "-1",
+      display: "block",
+      width: "210mm",
+      margin: "0",
+      padding: "0",
+      visibility: "visible",
+      pointerEvents: "none"
+    });
+
+    sheets.forEach(function (sheet) {
+      exportRoot.appendChild(sheet.cloneNode(true));
+    });
+    document.body.appendChild(exportRoot);
+    return exportRoot;
+  }
+
   // Genera un archivo descargable para GitHub Pages. Si la biblioteca no carga,
   // conserva el flujo de impresión como alternativa para no bloquear al asesor.
   async function downloadPdfDirect(suggestedFileName) {
@@ -3514,6 +3546,7 @@
 
     var session = createFreshPrintSession();
     var fallbackToPrint = false;
+    var exportRoot = null;
     try {
       showToast("Generando el PDF. Esto puede tardar unos segundos.");
       if (!await preparePrintDocument(session)) {
@@ -3528,6 +3561,7 @@
       }
 
       var fileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
+      exportRoot = createPdfExportRoot(session);
       await global.html2pdf().set({
         margin: 0,
         filename: fileName,
@@ -3541,7 +3575,7 @@
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: ["css", "legacy"] }
-      }).from(session.root).save();
+      }).from(exportRoot).save();
 
       updateLastPrintDiagnostics({
         destinoPdfPreparado: true,
@@ -3554,6 +3588,9 @@
       showToast("No fue posible descargar el PDF. Se abrirá la impresión como alternativa.");
       fallbackToPrint = true;
     } finally {
+      if (exportRoot && exportRoot.isConnected) {
+        exportRoot.remove();
+      }
       if (activePrintSession === session) {
         cleanupPrintSession("pdf_directo_finalizado");
       }
