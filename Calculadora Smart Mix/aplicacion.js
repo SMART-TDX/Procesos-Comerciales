@@ -4989,7 +4989,9 @@
 
     host.classList.add("is-measuring", "print-active");
     host.setAttribute("aria-hidden", "false");
+    host.style.top = "0";
     host.style.left = "0";
+    host.style.width = "210mm";
     host.style.zIndex = "-1000";
     host.style.pointerEvents = "none";
     sheets.forEach(function (sheet) {
@@ -5005,7 +5007,21 @@
         margin: 0,
         filename: fileName || "Cotizacion_Smart.pdf",
         image: { type: "jpeg", quality: 0.96 },
-        html2canvas: { scale: 1.35, useCORS: true, backgroundColor: "#ffffff", logging: false, windowWidth: 794 },
+        html2canvas: {
+          scale: 1.35,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          // Google Sites puede desplazar el iframe; fijamos el lienzo al
+          // origen de la hoja A4 para impedir que se recorte el lado izquierdo.
+          scrollX: 0,
+          scrollY: 0,
+          x: 0,
+          y: 0,
+          width: 794,
+          height: 1122,
+          windowWidth: 794
+        },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
       };
       var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
