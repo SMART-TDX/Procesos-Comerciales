@@ -3652,71 +3652,9 @@
     if (!ensureCurrentQuote()) {
       return;
     }
-    // Ruta estable para páginas embebidas: prepara el documento y lo abre en
-    // una pestaña apta para guardar como PDF, sin exportaciones en blanco.
+    // Prepara el documento y descarga el PDF directamente, sin abrir pestañas.
     printProposal(true, suggestedFileName);
     return;
-
-    if (typeof global.html2pdf !== "function") {
-      showToast("No fue posible cargar el generador de PDF. Se abrirá la impresión como alternativa.");
-      printProposal(true, suggestedFileName);
-      return;
-    }
-
-    var session = createFreshPrintSession();
-    var fallbackToPrint = false;
-    var exportDocument = null;
-    try {
-      showToast("Generando el PDF. Esto puede tardar unos segundos.");
-      if (!await preparePrintDocument(session)) {
-        if (activePrintSession === session) {
-          cleanupPrintSession("preparacion_pdf_fallida");
-        }
-        showToast(printPreparationError || "No fue posible preparar la cotización para PDF. Reintenta.");
-        return;
-      }
-      if (activePrintSession !== session || !ensureCurrentQuote()) {
-        return;
-      }
-
-      var fileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
-      exportDocument = createPdfExportRoot(session);
-      await global.html2pdf().set({
-        margin: 0,
-        filename: fileName,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: "#ffffff",
-          logging: false
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] }
-      }).from(exportDocument.content).save();
-
-      updateLastPrintDiagnostics({
-        destinoPdfPreparado: true,
-        descargaPdfDirecta: true,
-        archivoPdfDescargado: fileName
-      });
-      showToast("PDF descargado correctamente.");
-    } catch (error) {
-      updateLastPrintDiagnostics({ descargaPdfDirecta: false, errorPdfDirecto: String(error && error.message ? error.message : error) });
-      showToast("No fue posible descargar el PDF. Se abrirá la impresión como alternativa.");
-      fallbackToPrint = true;
-    } finally {
-      if (exportDocument && exportDocument.host && exportDocument.host.isConnected) {
-        exportDocument.host.remove();
-      }
-      if (activePrintSession === session) {
-        cleanupPrintSession("pdf_directo_finalizado");
-      }
-      if (fallbackToPrint) {
-        printProposal(true, suggestedFileName);
-      }
-    }
   }
 
   function quoteSummary(forWhatsApp) {
@@ -4989,9 +4927,7 @@
 
     host.classList.add("is-measuring", "print-active");
     host.setAttribute("aria-hidden", "false");
-    host.style.top = "0";
     host.style.left = "0";
-    host.style.width = "210mm";
     host.style.zIndex = "-1000";
     host.style.pointerEvents = "none";
     sheets.forEach(function (sheet) {
@@ -4999,12 +4935,7 @@
       sheet.style.setProperty("break-after", "auto", "important");
       sheet.style.setProperty("page-break-before", "auto", "important");
       sheet.style.setProperty("page-break-after", "auto", "important");
-      // Dentro de Google Sites la escala del iframe puede reducir 210 mm.
-      // Forzamos el ancho CSS exacto de un A4 a 96 dpi antes de capturar.
-      sheet.style.setProperty("width", "794px", "important");
-      sheet.style.setProperty("min-width", "794px", "important");
-      sheet.style.setProperty("max-width", "794px", "important");
-      sheet.style.setProperty("height", "1122px", "important");
+      sheet.style.setProperty("height", "296.8mm", "important");
     });
 
     try {
@@ -5017,14 +4948,6 @@
           useCORS: true,
           backgroundColor: "#ffffff",
           logging: false,
-          // Google Sites puede desplazar el iframe; fijamos el lienzo al
-          // origen de la hoja A4 para impedir que se recorte el lado izquierdo.
-          scrollX: 0,
-          scrollY: 0,
-          x: 0,
-          y: 0,
-          width: 794,
-          height: 1122,
           windowWidth: 794
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
@@ -5050,49 +4973,6 @@
     }
   }
 
-  function isEmbeddedInSite() {
-    try {
-      return global.top !== global.self;
-    } catch (error) {
-      return true;
-    }
-  }
-
-  function printPreparedDocumentInPopup(popup, session) {
-    var baseUrl = String(document.baseURI || global.location.href).replace(/"/g, "&quot;");
-    var bodyClass = String(document.body.className || "").replace(/"/g, "&quot;");
-    var title = String(document.title || "Cotización Smart Mix").replace(/</g, "");
-    var printed = false;
-    var triggerPrint = function () {
-      if (printed || popup.closed) { return; }
-      printed = true;
-      popup.focus();
-      popup.print();
-    };
-
-    popup.document.open();
-    popup.document.write(
-      '<!doctype html><html lang="es"><head><meta charset="utf-8">' +
-      '<meta name="viewport" content="width=device-width, initial-scale=1">' +
-      '<title>' + title + '</title><base href="' + baseUrl + '">' +
-      '<link rel="stylesheet" href="estilos.css"></head>' +
-      '<body class="' + bodyClass + '"><main id="print-document" class="print-document print-active">' +
-      session.root.outerHTML + '</main></body></html>'
-    );
-    popup.document.close();
-
-    var stylesheet = popup.document.querySelector('link[rel="stylesheet"]');
-    if (stylesheet) {
-      stylesheet.addEventListener("load", function () {
-        global.setTimeout(triggerPrint, 100);
-      }, { once: true });
-      stylesheet.addEventListener("error", function () {
-        global.setTimeout(triggerPrint, 100);
-      }, { once: true });
-    }
-    global.setTimeout(triggerPrint, 1200);
-  }
-
   async function continuePrinting() {
     if (isPrinting) {
       showToast("Ya existe una impresión en preparación. Espera a que finalice.");
@@ -5100,8 +4980,6 @@
     }
     var saveAsPdf = pendingPrintSaveAsPdf;
     var requestedPdfFileName = pendingPrintFileName;
-    // La descarga se realiza directamente; no se abre ninguna pestaña auxiliar.
-    var popupForEmbeddedSite = null;
     closePrintGuidance();
     showClientView();
     var session = createFreshPrintSession();
@@ -5109,14 +4987,12 @@
       if (!await preparePrintDocument(session)) {
         if (activePrintSession !== session) { return; }
         var preparationMessage = printPreparationError || "No fue posible generar correctamente el resumen económico. Reintenta la impresión.";
-        if (popupForEmbeddedSite && !popupForEmbeddedSite.closed) { popupForEmbeddedSite.close(); }
         cleanupPrintSession("preparacion_fallida");
         showToast(preparationMessage);
         return;
       }
     } catch (error) {
       if (activePrintSession !== session) { return; }
-      if (popupForEmbeddedSite && !popupForEmbeddedSite.closed) { popupForEmbeddedSite.close(); }
       cleanupPrintSession("excepcion_de_preparacion");
       showToast("No fue posible generar correctamente el resumen económico. Reintenta la impresión.");
       return;
@@ -5150,12 +5026,7 @@
       }
       try {
         if (!ensureCurrentQuote()) { cleanupPrintSession("cotizacion_modificada_antes_de_imprimir"); return; }
-        if (popupForEmbeddedSite) {
-          printPreparedDocumentInPopup(popupForEmbeddedSite, session);
-          showToast("Se abrió una pestaña para guardar la cotización como PDF.");
-        } else {
-          global.print();
-        }
+        global.print();
       } catch (error) {
         showToast("No fue posible abrir el diálogo de impresión. Reintenta la impresión.");
       } finally {
