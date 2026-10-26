@@ -3652,9 +3652,9 @@
     if (!ensureCurrentQuote()) {
       return;
     }
-    // Prepara el documento y descarga el PDF directamente, sin abrir pestañas.
-    printProposal(true, suggestedFileName);
-    return;
+    // Captura cada hoja desde un contenedor temporal situado en el origen.
+    // Así se evita el recorte horizontal que puede introducir un iframe.
+    await downloadPdfByPages(suggestedFileName);
   }
 
   function quoteSummary(forWhatsApp) {
