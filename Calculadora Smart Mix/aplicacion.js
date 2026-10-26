@@ -3677,9 +3677,9 @@
     if (!ensureCurrentQuote()) {
       return;
     }
-    // Captura cada hoja desde un contenedor temporal situado en el origen.
-    // Así se evita el recorte horizontal que puede introducir un iframe.
-    await downloadPdfByPages(suggestedFileName);
+    // Ruta comprobada de la versión estable: prepara el documento y descarga
+    // las hojas finales directamente, sin abrir una pestaña adicional.
+    printProposal(true, suggestedFileName);
   }
 
   function quoteSummary(forWhatsApp) {
