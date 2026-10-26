@@ -3493,7 +3493,193 @@
       return;
     }
     var data = currentWhatsAppMessageData(shareContextId);
-    printProposal(true, buildPdfFileName(data));
+    downloadPdfDirect(buildPdfFileName(data));
+  }
+
+  // html2pdf puede incluir los nodos usados durante la medición del documento.
+  // Para la descarga tomamos exclusivamente las hojas finales ya construidas,
+  // evitando que se creen páginas vacías antes de la cotización.
+  function createPdfExportRoot(session) {
+    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+    if (!sheets.length) {
+      throw new Error("No se encontraron páginas para exportar.");
+    }
+
+    // El contenedor auxiliar puede ir fuera del flujo de la pantalla, pero el
+    // elemento entregado a html2pdf debe permanecer en flujo normal. Si el
+    // objetivo es absolute/fixed, html2pdf calcula una altura adicional y
+    // termina anteponiendo páginas vacías.
+    var exportHost = document.createElement("div");
+    Object.assign(exportHost.style, {
+      position: "absolute",
+      top: "0",
+      left: "0",
+      zIndex: "-1",
+      width: "210mm",
+      margin: "0",
+      padding: "0",
+      visibility: "visible",
+      pointerEvents: "none"
+    });
+
+    var exportRoot = document.createElement("div");
+    exportRoot.className = "pdf-export-root";
+    exportRoot.setAttribute("aria-hidden", "true");
+    Object.assign(exportRoot.style, {
+      position: "static",
+      display: "block",
+      width: "210mm",
+      margin: "0",
+      padding: "0",
+      visibility: "visible"
+    });
+
+    sheets.forEach(function (sheet) {
+      exportRoot.appendChild(sheet.cloneNode(true));
+    });
+    exportHost.appendChild(exportRoot);
+    document.body.appendChild(exportHost);
+    return { host: exportHost, content: exportRoot };
+  }
+
+  // Genera el PDF hoja por hoja. Así no se exportan los contenedores usados
+  // para medir la propuesta ni aparecen páginas blancas al inicio.
+  async function downloadPdfByPages(suggestedFileName) {
+    if (typeof global.html2pdf !== "function") {
+      printProposal(true, suggestedFileName);
+      return;
+    }
+
+    var session = createFreshPrintSession();
+    var stagingHost = null;
+    try {
+      showToast("Preparando la descarga del PDF.");
+      if (!await preparePrintDocument(session)) {
+        if (activePrintSession === session) {
+          cleanupPrintSession("preparacion_pdf_fallida");
+        }
+        showToast(printPreparationError || "No fue posible preparar la cotización para PDF. Reintenta.");
+        return;
+      }
+      if (activePrintSession !== session || !ensureCurrentQuote()) {
+        return;
+      }
+
+      var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+      if (!sheets.length) {
+        throw new Error("No se encontraron páginas para el PDF.");
+      }
+
+      stagingHost = document.createElement("div");
+      Object.assign(stagingHost.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        // html2canvas no puede capturar de forma consistente elementos detrás
+        // de la página. Se muestra sobre la interfaz solo mientras se genera.
+        zIndex: "2147483647",
+        width: "210mm",
+        margin: "0",
+        padding: "0",
+        pointerEvents: "none"
+      });
+      document.body.appendChild(stagingHost);
+
+      var options = {
+        margin: 0,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] }
+      };
+      var pdf = null;
+
+      for (var index = 0; index < sheets.length; index += 1) {
+        stagingHost.textContent = "";
+        var sheet = sheets[index].cloneNode(true);
+        sheet.style.breakAfter = "auto";
+        sheet.style.pageBreakAfter = "auto";
+        sheet.style.width = "210mm";
+        sheet.style.minWidth = "210mm";
+        sheet.style.maxWidth = "210mm";
+        sheet.style.margin = "0";
+        sheet.style.transform = "none";
+        stagingHost.appendChild(sheet);
+        await waitForNextPrintFrame();
+
+        // html2canvas puede usar el ancho del iframe como ventana de captura.
+        // Medimos la hoja ya renderizada y fijamos ese lienzo completo.
+        var captureWidth = Math.ceil(Math.max(
+          sheet.scrollWidth,
+          sheet.getBoundingClientRect().width,
+          document.documentElement.clientWidth
+        ));
+        var captureHeight = Math.ceil(Math.max(
+          sheet.scrollHeight,
+          sheet.getBoundingClientRect().height
+        ));
+        options.html2canvas.width = Math.ceil(sheet.scrollWidth);
+        options.html2canvas.height = captureHeight;
+        options.html2canvas.windowWidth = captureWidth;
+        options.html2canvas.windowHeight = captureHeight;
+        options.html2canvas.x = 0;
+        options.html2canvas.y = 0;
+        options.html2canvas.scrollX = 0;
+        options.html2canvas.scrollY = 0;
+
+        if (index === 0) {
+          var firstWorker = global.html2pdf().set(options).from(sheet).toPdf();
+          pdf = await firstWorker.get("pdf");
+        } else {
+          var pageWorker = global.html2pdf().set(options).from(sheet).toCanvas();
+          var canvas = await pageWorker.get("canvas");
+          pdf.addPage("a4", "portrait");
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297);
+        }
+      }
+
+      var fileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
+      pdf.save(fileName);
+      updateLastPrintDiagnostics({
+        destinoPdfPreparado: true,
+        descargaPdfDirecta: true,
+        archivoPdfDescargado: fileName,
+        paginasPdf: sheets.length
+      });
+      showToast("PDF descargado correctamente.");
+    } catch (error) {
+      updateLastPrintDiagnostics({ descargaPdfDirecta: false, errorPdfDirecto: String(error && error.message ? error.message : error) });
+      showToast("No fue posible descargar el PDF. Se abrirá la versión para guardar como PDF.");
+      printProposal(true, suggestedFileName);
+    } finally {
+      if (stagingHost && stagingHost.isConnected) {
+        stagingHost.remove();
+      }
+      if (activePrintSession === session) {
+        cleanupPrintSession("pdf_directo_finalizado");
+      }
+    }
+  }
+
+  // Genera un archivo descargable para GitHub Pages. Si la biblioteca no carga,
+  // conserva el flujo de impresión como alternativa para no bloquear al asesor.
+  async function downloadPdfDirect(suggestedFileName) {
+    if (isPrinting) {
+      showToast("Ya existe un PDF en preparación. Espera a que finalice.");
+      return;
+    }
+    if (!ensureCurrentQuote()) {
+      return;
+    }
+    // Ruta comprobada de la versión estable: prepara el documento y descarga
+    // las hojas finales directamente, sin abrir una pestaña adicional.
+    printProposal(true, suggestedFileName);
   }
 
   function quoteSummary(forWhatsApp) {
@@ -4750,6 +4936,8 @@
     }
   }
 
+  // Exportador directo validado: convierte cada hoja ya preparada y conserva
+  // exactamente una página PDF por cada hoja de la cotización.
   async function downloadPreparedDocumentAsPdf(session, fileName) {
     if (typeof global.html2pdf !== "function") {
       throw new Error("MOTOR_PDF_NO_DISPONIBLE");
@@ -4757,9 +4945,7 @@
     var host = elements["print-document"];
     var previousHostStyle = host.getAttribute("style");
     var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
-    var previousSheetStyles = sheets.map(function (sheet) {
-      return sheet.getAttribute("style");
-    });
+    var previousSheetStyles = sheets.map(function (sheet) { return sheet.getAttribute("style"); });
     if (!sheets.length) {
       throw new Error("DOCUMENTO_PDF_VACIO");
     }
@@ -4769,6 +4955,15 @@
     host.style.left = "0";
     host.style.zIndex = "-1000";
     host.style.pointerEvents = "none";
+    // En un sitio embebido el navegador puede desplazar el contenedor de
+    // impresión aunque su estilo indique left: 0. Lo compensamos con su
+    // posición real, sin usar una medida fija dependiente de la pantalla.
+    await waitForNextPrintFrame();
+    var hostLeftOffset = host.getBoundingClientRect().left;
+    if (Math.abs(hostLeftOffset) > 0.5) {
+      host.style.left = String(Math.round(-hostLeftOffset)) + "px";
+      await waitForNextPrintFrame();
+    }
     sheets.forEach(function (sheet) {
       sheet.style.setProperty("break-before", "auto", "important");
       sheet.style.setProperty("break-after", "auto", "important");
@@ -4780,7 +4975,7 @@
     try {
       var pdfOptions = {
         margin: 0,
-        filename: fileName || "Cotizacion_Smart_Mix.pdf",
+        filename: fileName || "Cotizacion_Smart.pdf",
         image: { type: "jpeg", quality: 0.96 },
         html2canvas: {
           scale: 1.35,
@@ -4797,28 +4992,18 @@
         pdf.deletePage(pdf.getNumberOfPages());
       }
       for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
-        var canvas = await global.html2pdf()
-          .set(pdfOptions)
-          .from(sheets[sheetIndex])
-          .toCanvas()
-          .get("canvas");
+        var canvas = await global.html2pdf().set(pdfOptions).from(sheets[sheetIndex]).toCanvas().get("canvas");
         pdf.addPage("a4", "portrait");
         pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
       }
       pdf.save(pdfOptions.filename);
     } finally {
       sheets.forEach(function (sheet, index) {
-        if (previousSheetStyles[index] === null) {
-          sheet.removeAttribute("style");
-        } else {
-          sheet.setAttribute("style", previousSheetStyles[index]);
-        }
+        if (previousSheetStyles[index] === null) { sheet.removeAttribute("style"); }
+        else { sheet.setAttribute("style", previousSheetStyles[index]); }
       });
-      if (previousHostStyle === null) {
-        host.removeAttribute("style");
-      } else {
-        host.setAttribute("style", previousHostStyle);
-      }
+      if (previousHostStyle === null) { host.removeAttribute("style"); }
+      else { host.setAttribute("style", previousHostStyle); }
     }
   }
 
@@ -4852,7 +5037,7 @@
       session.documentTitleBeforePrint = document.title;
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
-      updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
+      updateLastPrintDiagnostics({ destinoPdfPreparado: true, descargaPdfDirecta: true });
       showToast("Generando y descargando el PDF...");
       try {
         await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
@@ -4865,6 +5050,8 @@
           : "No fue posible descargar el PDF. Reintenta la descarga.");
       }
       return;
+      updateLastPrintDiagnostics({ destinoPdfPreparado: true });
+      showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
     }
     printLaunchTimer = global.setTimeout(function () {
       printLaunchTimer = null;
@@ -5085,9 +5272,9 @@
     byId("btn-whatsapp").addEventListener("click", openSharePreview);
     byId("btn-client-compartir").addEventListener("click", openSharePreview);
     byId("btn-client-whatsapp").addEventListener("click", openSharePreview);
-    byId("btn-imprimir").addEventListener("click", function () { printProposal(false); });
-    byId("btn-pdf").addEventListener("click", function () { printProposal(true); });
-    byId("btn-client-print").addEventListener("click", function () { printProposal(true); });
+    byId("btn-imprimir").addEventListener("click", function () { downloadPdfDirect(); });
+    byId("btn-pdf").addEventListener("click", function () { downloadPdfDirect(); });
+    byId("btn-client-print").addEventListener("click", function () { downloadPdfDirect(); });
     byId("btn-cerrar-compartir").addEventListener("click", closeSharePreview);
     byId("btn-copiar-mensaje-manual").addEventListener("click", copyShareFromPreview);
     byId("btn-compartir-dialog").addEventListener("click", function () {
