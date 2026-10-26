@@ -4955,6 +4955,15 @@
     host.style.left = "0";
     host.style.zIndex = "-1000";
     host.style.pointerEvents = "none";
+    // En un sitio embebido el navegador puede desplazar el contenedor de
+    // impresión aunque su estilo indique left: 0. Lo compensamos con su
+    // posición real, sin usar una medida fija dependiente de la pantalla.
+    await waitForNextPrintFrame();
+    var hostLeftOffset = host.getBoundingClientRect().left;
+    if (Math.abs(hostLeftOffset) > 0.5) {
+      host.style.left = String(Math.round(-hostLeftOffset)) + "px";
+      await waitForNextPrintFrame();
+    }
     sheets.forEach(function (sheet) {
       sheet.style.setProperty("break-before", "auto", "important");
       sheet.style.setProperty("break-after", "auto", "important");
