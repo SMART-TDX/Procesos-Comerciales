@@ -3575,7 +3575,9 @@
         position: "fixed",
         top: "0",
         left: "0",
-        zIndex: "-1",
+        // html2canvas no puede capturar de forma consistente elementos detrás
+        // de la página. Se muestra sobre la interfaz solo mientras se genera.
+        zIndex: "2147483647",
         width: "210mm",
         margin: "0",
         padding: "0",
