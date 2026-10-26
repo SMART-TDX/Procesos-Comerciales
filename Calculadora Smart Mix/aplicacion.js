@@ -5376,7 +5376,7 @@
     byId("btn-whatsapp").addEventListener("click", openSharePreview);
     byId("btn-client-compartir").addEventListener("click", openSharePreview);
     byId("btn-client-whatsapp").addEventListener("click", openSharePreview);
-    byId("btn-imprimir").addEventListener("click", function () { printProposal(false); });
+    byId("btn-imprimir").addEventListener("click", function () { downloadPdfDirect(); });
     byId("btn-pdf").addEventListener("click", function () { downloadPdfDirect(); });
     byId("btn-client-print").addEventListener("click", function () { downloadPdfDirect(); });
     byId("btn-cerrar-compartir").addEventListener("click", closeSharePreview);
