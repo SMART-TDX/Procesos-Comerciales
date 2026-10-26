@@ -3509,9 +3509,11 @@
     exportRoot.className = "pdf-export-root";
     exportRoot.setAttribute("aria-hidden", "true");
     Object.assign(exportRoot.style, {
-      position: "fixed",
+      // Debe existir dentro del lienzo del navegador. Cuando se ubica fuera de
+      // pantalla html2canvas conserva ese desplazamiento y crea hojas vacías.
+      position: "absolute",
       top: "0",
-      left: "-100000px",
+      left: "0",
       zIndex: "-1",
       display: "block",
       width: "210mm",
