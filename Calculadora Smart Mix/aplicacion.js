@@ -3493,7 +3493,74 @@
       return;
     }
     var data = currentWhatsAppMessageData(shareContextId);
-    printProposal(true, buildPdfFileName(data));
+    downloadPdfDirect(buildPdfFileName(data));
+  }
+
+  // Genera un archivo descargable para GitHub Pages. Si la biblioteca no carga,
+  // conserva el flujo de impresión como alternativa para no bloquear al asesor.
+  async function downloadPdfDirect(suggestedFileName) {
+    if (isPrinting) {
+      showToast("Ya existe un PDF en preparación. Espera a que finalice.");
+      return;
+    }
+    if (!ensureCurrentQuote()) {
+      return;
+    }
+    if (typeof global.html2pdf !== "function") {
+      showToast("No fue posible cargar el generador de PDF. Se abrirá la impresión como alternativa.");
+      printProposal(true, suggestedFileName);
+      return;
+    }
+
+    var session = createFreshPrintSession();
+    var fallbackToPrint = false;
+    try {
+      showToast("Generando el PDF. Esto puede tardar unos segundos.");
+      if (!await preparePrintDocument(session)) {
+        if (activePrintSession === session) {
+          cleanupPrintSession("preparacion_pdf_fallida");
+        }
+        showToast(printPreparationError || "No fue posible preparar la cotización para PDF. Reintenta.");
+        return;
+      }
+      if (activePrintSession !== session || !ensureCurrentQuote()) {
+        return;
+      }
+
+      var fileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
+      await global.html2pdf().set({
+        margin: 0,
+        filename: fileName,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] }
+      }).from(session.root).save();
+
+      updateLastPrintDiagnostics({
+        destinoPdfPreparado: true,
+        descargaPdfDirecta: true,
+        archivoPdfDescargado: fileName
+      });
+      showToast("PDF descargado correctamente.");
+    } catch (error) {
+      updateLastPrintDiagnostics({ descargaPdfDirecta: false, errorPdfDirecto: String(error && error.message ? error.message : error) });
+      showToast("No fue posible descargar el PDF. Se abrirá la impresión como alternativa.");
+      fallbackToPrint = true;
+    } finally {
+      if (activePrintSession === session) {
+        cleanupPrintSession("pdf_directo_finalizado");
+      }
+      if (fallbackToPrint) {
+        printProposal(true, suggestedFileName);
+      }
+    }
   }
 
   function quoteSummary(forWhatsApp) {
@@ -5003,8 +5070,8 @@
     byId("btn-client-compartir").addEventListener("click", openSharePreview);
     byId("btn-client-whatsapp").addEventListener("click", openSharePreview);
     byId("btn-imprimir").addEventListener("click", function () { printProposal(false); });
-    byId("btn-pdf").addEventListener("click", function () { printProposal(true); });
-    byId("btn-client-print").addEventListener("click", function () { printProposal(true); });
+    byId("btn-pdf").addEventListener("click", function () { downloadPdfDirect(); });
+    byId("btn-client-print").addEventListener("click", function () { downloadPdfDirect(); });
     byId("btn-cerrar-compartir").addEventListener("click", closeSharePreview);
     byId("btn-copiar-mensaje-manual").addEventListener("click", copyShareFromPreview);
     byId("btn-compartir-dialog").addEventListener("click", function () {
