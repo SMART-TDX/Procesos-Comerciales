@@ -3605,8 +3605,33 @@
         var sheet = sheets[index].cloneNode(true);
         sheet.style.breakAfter = "auto";
         sheet.style.pageBreakAfter = "auto";
+        sheet.style.width = "210mm";
+        sheet.style.minWidth = "210mm";
+        sheet.style.maxWidth = "210mm";
+        sheet.style.margin = "0";
+        sheet.style.transform = "none";
         stagingHost.appendChild(sheet);
         await waitForNextPrintFrame();
+
+        // html2canvas puede usar el ancho del iframe como ventana de captura.
+        // Medimos la hoja ya renderizada y fijamos ese lienzo completo.
+        var captureWidth = Math.ceil(Math.max(
+          sheet.scrollWidth,
+          sheet.getBoundingClientRect().width,
+          document.documentElement.clientWidth
+        ));
+        var captureHeight = Math.ceil(Math.max(
+          sheet.scrollHeight,
+          sheet.getBoundingClientRect().height
+        ));
+        options.html2canvas.width = Math.ceil(sheet.scrollWidth);
+        options.html2canvas.height = captureHeight;
+        options.html2canvas.windowWidth = captureWidth;
+        options.html2canvas.windowHeight = captureHeight;
+        options.html2canvas.x = 0;
+        options.html2canvas.y = 0;
+        options.html2canvas.scrollX = 0;
+        options.html2canvas.scrollY = 0;
 
         if (index === 0) {
           var firstWorker = global.html2pdf().set(options).from(sheet).toPdf();
