@@ -3552,6 +3552,12 @@
     if (!ensureCurrentQuote()) {
       return;
     }
+    // Se usa el motor nativo del navegador porque es el que respeta la
+    // paginación validada de la cotización al guardar como PDF.
+    showToast("Abriendo la versión lista para guardar como PDF.");
+    printProposal(true, suggestedFileName);
+    return;
+
     if (typeof global.html2pdf !== "function") {
       showToast("No fue posible cargar el generador de PDF. Se abrirá la impresión como alternativa.");
       printProposal(true, suggestedFileName);
