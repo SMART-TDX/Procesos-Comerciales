@@ -4999,7 +4999,12 @@
       sheet.style.setProperty("break-after", "auto", "important");
       sheet.style.setProperty("page-break-before", "auto", "important");
       sheet.style.setProperty("page-break-after", "auto", "important");
-      sheet.style.setProperty("height", "296.8mm", "important");
+      // Dentro de Google Sites la escala del iframe puede reducir 210 mm.
+      // Forzamos el ancho CSS exacto de un A4 a 96 dpi antes de capturar.
+      sheet.style.setProperty("width", "794px", "important");
+      sheet.style.setProperty("min-width", "794px", "important");
+      sheet.style.setProperty("max-width", "794px", "important");
+      sheet.style.setProperty("height", "1122px", "important");
     });
 
     try {
