@@ -5100,17 +5100,8 @@
     }
     var saveAsPdf = pendingPrintSaveAsPdf;
     var requestedPdfFileName = pendingPrintFileName;
-    // Google Sites ejecuta el desarrollo dentro de un iframe y puede bloquear
-    // window.print(). Abrimos la ventana desde el clic del usuario, antes de
-    // cualquier proceso asíncrono, para conservar el permiso del navegador.
+    // La descarga se realiza directamente; no se abre ninguna pestaña auxiliar.
     var popupForEmbeddedSite = null;
-    if (isEmbeddedInSite() && !saveAsPdf) {
-      popupForEmbeddedSite = global.open("", "_blank");
-      if (!popupForEmbeddedSite) {
-        showToast("El navegador bloqueó la nueva ventana. Permite las ventanas emergentes para este Site e inténtalo de nuevo.");
-        return;
-      }
-    }
     closePrintGuidance();
     showClientView();
     var session = createFreshPrintSession();
