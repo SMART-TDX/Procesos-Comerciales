@@ -3542,6 +3542,104 @@
     return { host: exportHost, content: exportRoot };
   }
 
+  // Genera el PDF hoja por hoja. Así no se exportan los contenedores usados
+  // para medir la propuesta ni aparecen páginas blancas al inicio.
+  async function downloadPdfByPages(suggestedFileName) {
+    if (typeof global.html2pdf !== "function") {
+      printProposal(true, suggestedFileName);
+      return;
+    }
+
+    var session = createFreshPrintSession();
+    var stagingHost = null;
+    try {
+      showToast("Preparando la descarga del PDF.");
+      if (!await preparePrintDocument(session)) {
+        if (activePrintSession === session) {
+          cleanupPrintSession("preparacion_pdf_fallida");
+        }
+        showToast(printPreparationError || "No fue posible preparar la cotización para PDF. Reintenta.");
+        return;
+      }
+      if (activePrintSession !== session || !ensureCurrentQuote()) {
+        return;
+      }
+
+      var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+      if (!sheets.length) {
+        throw new Error("No se encontraron páginas para el PDF.");
+      }
+
+      stagingHost = document.createElement("div");
+      Object.assign(stagingHost.style, {
+        position: "fixed",
+        top: "0",
+        left: "0",
+        zIndex: "-1",
+        width: "210mm",
+        margin: "0",
+        padding: "0",
+        pointerEvents: "none"
+      });
+      document.body.appendChild(stagingHost);
+
+      var options = {
+        margin: 0,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] }
+      };
+      var pdf = null;
+
+      for (var index = 0; index < sheets.length; index += 1) {
+        stagingHost.textContent = "";
+        var sheet = sheets[index].cloneNode(true);
+        sheet.style.breakAfter = "auto";
+        sheet.style.pageBreakAfter = "auto";
+        stagingHost.appendChild(sheet);
+        await waitForNextPrintFrame();
+
+        if (index === 0) {
+          var firstWorker = global.html2pdf().set(options).from(sheet).toPdf();
+          pdf = await firstWorker.get("pdf");
+        } else {
+          var pageWorker = global.html2pdf().set(options).from(sheet).toCanvas();
+          var canvas = await pageWorker.get("canvas");
+          pdf.addPage("a4", "portrait");
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297);
+        }
+      }
+
+      var fileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
+      pdf.save(fileName);
+      updateLastPrintDiagnostics({
+        destinoPdfPreparado: true,
+        descargaPdfDirecta: true,
+        archivoPdfDescargado: fileName,
+        paginasPdf: sheets.length
+      });
+      showToast("PDF descargado correctamente.");
+    } catch (error) {
+      updateLastPrintDiagnostics({ descargaPdfDirecta: false, errorPdfDirecto: String(error && error.message ? error.message : error) });
+      showToast("No fue posible descargar el PDF. Se abrirá la versión para guardar como PDF.");
+      printProposal(true, suggestedFileName);
+    } finally {
+      if (stagingHost && stagingHost.isConnected) {
+        stagingHost.remove();
+      }
+      if (activePrintSession === session) {
+        cleanupPrintSession("pdf_directo_finalizado");
+      }
+    }
+  }
+
   // Genera un archivo descargable para GitHub Pages. Si la biblioteca no carga,
   // conserva el flujo de impresión como alternativa para no bloquear al asesor.
   async function downloadPdfDirect(suggestedFileName) {
@@ -3552,11 +3650,7 @@
     if (!ensureCurrentQuote()) {
       return;
     }
-    // Se usa el motor nativo del navegador porque es el que respeta la
-    // paginación validada de la cotización al guardar como PDF.
-    showToast("Abriendo la versión lista para guardar como PDF.");
-    printProposal(true, suggestedFileName);
-    return;
+    return downloadPdfByPages(suggestedFileName);
 
     if (typeof global.html2pdf !== "function") {
       showToast("No fue posible cargar el generador de PDF. Se abrirá la impresión como alternativa.");
