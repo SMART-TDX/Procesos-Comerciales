@@ -3505,17 +3505,16 @@
       throw new Error("No se encontraron páginas para exportar.");
     }
 
-    var exportRoot = document.createElement("div");
-    exportRoot.className = "pdf-export-root";
-    exportRoot.setAttribute("aria-hidden", "true");
-    Object.assign(exportRoot.style, {
-      // Debe existir dentro del lienzo del navegador. Cuando se ubica fuera de
-      // pantalla html2canvas conserva ese desplazamiento y crea hojas vacías.
+    // El contenedor auxiliar puede ir fuera del flujo de la pantalla, pero el
+    // elemento entregado a html2pdf debe permanecer en flujo normal. Si el
+    // objetivo es absolute/fixed, html2pdf calcula una altura adicional y
+    // termina anteponiendo páginas vacías.
+    var exportHost = document.createElement("div");
+    Object.assign(exportHost.style, {
       position: "absolute",
       top: "0",
       left: "0",
       zIndex: "-1",
-      display: "block",
       width: "210mm",
       margin: "0",
       padding: "0",
@@ -3523,11 +3522,24 @@
       pointerEvents: "none"
     });
 
+    var exportRoot = document.createElement("div");
+    exportRoot.className = "pdf-export-root";
+    exportRoot.setAttribute("aria-hidden", "true");
+    Object.assign(exportRoot.style, {
+      position: "static",
+      display: "block",
+      width: "210mm",
+      margin: "0",
+      padding: "0",
+      visibility: "visible"
+    });
+
     sheets.forEach(function (sheet) {
       exportRoot.appendChild(sheet.cloneNode(true));
     });
-    document.body.appendChild(exportRoot);
-    return exportRoot;
+    exportHost.appendChild(exportRoot);
+    document.body.appendChild(exportHost);
+    return { host: exportHost, content: exportRoot };
   }
 
   // Genera un archivo descargable para GitHub Pages. Si la biblioteca no carga,
@@ -3548,7 +3560,7 @@
 
     var session = createFreshPrintSession();
     var fallbackToPrint = false;
-    var exportRoot = null;
+    var exportDocument = null;
     try {
       showToast("Generando el PDF. Esto puede tardar unos segundos.");
       if (!await preparePrintDocument(session)) {
@@ -3563,7 +3575,7 @@
       }
 
       var fileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
-      exportRoot = createPdfExportRoot(session);
+      exportDocument = createPdfExportRoot(session);
       await global.html2pdf().set({
         margin: 0,
         filename: fileName,
@@ -3577,7 +3589,7 @@
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         pagebreak: { mode: ["css", "legacy"] }
-      }).from(exportRoot).save();
+      }).from(exportDocument.content).save();
 
       updateLastPrintDiagnostics({
         destinoPdfPreparado: true,
@@ -3590,8 +3602,8 @@
       showToast("No fue posible descargar el PDF. Se abrirá la impresión como alternativa.");
       fallbackToPrint = true;
     } finally {
-      if (exportRoot && exportRoot.isConnected) {
-        exportRoot.remove();
+      if (exportDocument && exportDocument.host && exportDocument.host.isConnected) {
+        exportDocument.host.remove();
       }
       if (activePrintSession === session) {
         cleanupPrintSession("pdf_directo_finalizado");
