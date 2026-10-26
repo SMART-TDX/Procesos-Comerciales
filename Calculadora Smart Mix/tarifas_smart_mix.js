@@ -7,12 +7,13 @@ global.SMART_MIX_META = Object.freeze({
   "archivo": "Tarifas Smart Mix - 2026 - V1_APROBADA.xlsx",
   "sha256": "A7603CE916C5F778899F59E01FAC0C7C50B02DF5AA9E39D38B3AA231A297091D",
   "hoja": "Tarifas Mix - Inglés",
-  "total_registros": 120,
+  "total_registros": 160,
   "total_combinaciones": 15,
   "condiciones_autorizadas": [
     "PRECIO_AL_PUBLICO",
     "ALIANZA_MASIVA",
-    "ALIANZA_EMPRESARIAL"
+    "ALIANZA_EMPRESARIAL",
+    "COLABORADOR"
   ]
 });
 var records = [
@@ -4515,8 +4516,1868 @@ var records = [
         "intensidad": "Z44"
       }
     }
+  },
+  {
+    "plan_id": "MIX_START",
+    "modulos_incluidos": [
+      "Start"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Start",
+    "horas_academicas": 90,
+    "valor_full_oficial_cop": 1440000,
+    "fila_combinacion": 5,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.25",
+    "cuota_inicial_minima_cop": 1080000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 1080000,
+    "valor_por_hora_mostrado_cop": 12000,
+    "maxima_intensidad_mensual_mostrada": 90,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 5,
+      "valores_originales": {
+        "AB5": "1",
+        "AC5": "0.25",
+        "AD5": "1080000",
+        "AE5": "0",
+        "AF5": "1080000",
+        "AG5": "12000",
+        "AH5": "90"
+      },
+      "celdas": {
+        "pagos": "AB5",
+        "descuento": "AC5",
+        "inicial": "AD5",
+        "mensualidad": "AE5",
+        "total": "AF5",
+        "valor_hora": "AG5",
+        "intensidad": "AH5"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START",
+    "modulos_incluidos": [
+      "Start"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Start",
+    "horas_academicas": 90,
+    "valor_full_oficial_cop": 1440000,
+    "fila_combinacion": 5,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 5,
+    "porcentaje_descuento_exacto": "0.15",
+    "cuota_inicial_minima_cop": 244800,
+    "cuota_mensual_referencia_cop": 244800,
+    "valor_total_oficial_cop": 1224000,
+    "valor_por_hora_mostrado_cop": 13600,
+    "maxima_intensidad_mensual_mostrada": 18,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 6,
+      "valores_originales": {
+        "AB6": "5",
+        "AC6": "0.15000000000000002",
+        "AD6": "244800",
+        "AE6": "244800",
+        "AF6": "1224000",
+        "AG6": "13600",
+        "AH6": "18"
+      },
+      "celdas": {
+        "pagos": "AB6",
+        "descuento": "AC6",
+        "inicial": "AD6",
+        "mensualidad": "AE6",
+        "total": "AF6",
+        "valor_hora": "AG6",
+        "intensidad": "AH6"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO",
+    "modulos_incluidos": [
+      "Go"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Go",
+    "horas_academicas": 110,
+    "valor_full_oficial_cop": 1760000,
+    "fila_combinacion": 7,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.25",
+    "cuota_inicial_minima_cop": 1320000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 1320000,
+    "valor_por_hora_mostrado_cop": 12000,
+    "maxima_intensidad_mensual_mostrada": 110,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 7,
+      "valores_originales": {
+        "AB7": "1",
+        "AC7": "0.25",
+        "AD7": "1320000",
+        "AE7": "0",
+        "AF7": "1320000",
+        "AG7": "12000",
+        "AH7": "110"
+      },
+      "celdas": {
+        "pagos": "AB7",
+        "descuento": "AC7",
+        "inicial": "AD7",
+        "mensualidad": "AE7",
+        "total": "AF7",
+        "valor_hora": "AG7",
+        "intensidad": "AH7"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO",
+    "modulos_incluidos": [
+      "Go"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Go",
+    "horas_academicas": 110,
+    "valor_full_oficial_cop": 1760000,
+    "fila_combinacion": 7,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 5,
+    "porcentaje_descuento_exacto": "0.15",
+    "cuota_inicial_minima_cop": 299200,
+    "cuota_mensual_referencia_cop": 299200,
+    "valor_total_oficial_cop": 1496000,
+    "valor_por_hora_mostrado_cop": 13600,
+    "maxima_intensidad_mensual_mostrada": 22,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 8,
+      "valores_originales": {
+        "AB8": "5",
+        "AC8": "0.15000000000000002",
+        "AD8": "299200",
+        "AE8": "299200",
+        "AF8": "1496000",
+        "AG8": "13600",
+        "AH8": "22"
+      },
+      "celdas": {
+        "pagos": "AB8",
+        "descuento": "AC8",
+        "inicial": "AD8",
+        "mensualidad": "AE8",
+        "total": "AF8",
+        "valor_hora": "AG8",
+        "intensidad": "AH8"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW",
+    "modulos_incluidos": [
+      "Flow"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Flow",
+    "horas_academicas": 120,
+    "valor_full_oficial_cop": 1920000,
+    "fila_combinacion": 9,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.25",
+    "cuota_inicial_minima_cop": 1440000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 1440000,
+    "valor_por_hora_mostrado_cop": 12000,
+    "maxima_intensidad_mensual_mostrada": 120,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 9,
+      "valores_originales": {
+        "AB9": "1",
+        "AC9": "0.25",
+        "AD9": "1440000",
+        "AE9": "0",
+        "AF9": "1440000",
+        "AG9": "12000",
+        "AH9": "120"
+      },
+      "celdas": {
+        "pagos": "AB9",
+        "descuento": "AC9",
+        "inicial": "AD9",
+        "mensualidad": "AE9",
+        "total": "AF9",
+        "valor_hora": "AG9",
+        "intensidad": "AH9"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW",
+    "modulos_incluidos": [
+      "Flow"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Flow",
+    "horas_academicas": 120,
+    "valor_full_oficial_cop": 1920000,
+    "fila_combinacion": 9,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 5,
+    "porcentaje_descuento_exacto": "0.15",
+    "cuota_inicial_minima_cop": 326400,
+    "cuota_mensual_referencia_cop": 326400,
+    "valor_total_oficial_cop": 1632000,
+    "valor_por_hora_mostrado_cop": 13600,
+    "maxima_intensidad_mensual_mostrada": 24,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 10,
+      "valores_originales": {
+        "AB10": "5",
+        "AC10": "0.15000000000000002",
+        "AD10": "326400",
+        "AE10": "326400",
+        "AF10": "1632000",
+        "AG10": "13600",
+        "AH10": "24"
+      },
+      "celdas": {
+        "pagos": "AB10",
+        "descuento": "AC10",
+        "inicial": "AD10",
+        "mensualidad": "AE10",
+        "total": "AF10",
+        "valor_hora": "AG10",
+        "intensidad": "AH10"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PLUS",
+    "modulos_incluidos": [
+      "Plus"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Plus",
+    "horas_academicas": 140,
+    "valor_full_oficial_cop": 2240000,
+    "fila_combinacion": 11,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.25",
+    "cuota_inicial_minima_cop": 1680000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 1680000,
+    "valor_por_hora_mostrado_cop": 12000,
+    "maxima_intensidad_mensual_mostrada": 140,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 11,
+      "valores_originales": {
+        "AB11": "1",
+        "AC11": "0.25",
+        "AD11": "1680000",
+        "AE11": "0",
+        "AF11": "1680000",
+        "AG11": "12000",
+        "AH11": "140"
+      },
+      "celdas": {
+        "pagos": "AB11",
+        "descuento": "AC11",
+        "inicial": "AD11",
+        "mensualidad": "AE11",
+        "total": "AF11",
+        "valor_hora": "AG11",
+        "intensidad": "AH11"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PLUS",
+    "modulos_incluidos": [
+      "Plus"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Plus",
+    "horas_academicas": 140,
+    "valor_full_oficial_cop": 2240000,
+    "fila_combinacion": 11,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 5,
+    "porcentaje_descuento_exacto": "0.15",
+    "cuota_inicial_minima_cop": 380800,
+    "cuota_mensual_referencia_cop": 380800,
+    "valor_total_oficial_cop": 1904000,
+    "valor_por_hora_mostrado_cop": 13600,
+    "maxima_intensidad_mensual_mostrada": 28,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 12,
+      "valores_originales": {
+        "AB12": "5",
+        "AC12": "0.15000000000000002",
+        "AD12": "380800",
+        "AE12": "380800",
+        "AF12": "1904000",
+        "AG12": "13600",
+        "AH12": "28"
+      },
+      "celdas": {
+        "pagos": "AB12",
+        "descuento": "AC12",
+        "inicial": "AD12",
+        "mensualidad": "AE12",
+        "total": "AF12",
+        "valor_hora": "AG12",
+        "intensidad": "AH12"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PRO",
+    "modulos_incluidos": [
+      "Pro"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Pro",
+    "horas_academicas": 140,
+    "valor_full_oficial_cop": 2240000,
+    "fila_combinacion": 13,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.25",
+    "cuota_inicial_minima_cop": 1680000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 1680000,
+    "valor_por_hora_mostrado_cop": 12000,
+    "maxima_intensidad_mensual_mostrada": 140,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 13,
+      "valores_originales": {
+        "AB13": "1",
+        "AC13": "0.25",
+        "AD13": "1680000",
+        "AE13": "0",
+        "AF13": "1680000",
+        "AG13": "12000",
+        "AH13": "140"
+      },
+      "celdas": {
+        "pagos": "AB13",
+        "descuento": "AC13",
+        "inicial": "AD13",
+        "mensualidad": "AE13",
+        "total": "AF13",
+        "valor_hora": "AG13",
+        "intensidad": "AH13"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PRO",
+    "modulos_incluidos": [
+      "Pro"
+    ],
+    "numero_modulos": 1,
+    "nombre_plan_interfaz": "Pro",
+    "horas_academicas": 140,
+    "valor_full_oficial_cop": 2240000,
+    "fila_combinacion": 13,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 5,
+    "porcentaje_descuento_exacto": "0.15",
+    "cuota_inicial_minima_cop": 380800,
+    "cuota_mensual_referencia_cop": 380800,
+    "valor_total_oficial_cop": 1904000,
+    "valor_por_hora_mostrado_cop": 13600,
+    "maxima_intensidad_mensual_mostrada": 28,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 14,
+      "valores_originales": {
+        "AB14": "5",
+        "AC14": "0.15000000000000002",
+        "AD14": "380800",
+        "AE14": "380800",
+        "AF14": "1904000",
+        "AG14": "13600",
+        "AH14": "28"
+      },
+      "celdas": {
+        "pagos": "AB14",
+        "descuento": "AC14",
+        "inicial": "AD14",
+        "mensualidad": "AE14",
+        "total": "AF14",
+        "valor_hora": "AG14",
+        "intensidad": "AH14"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO",
+    "modulos_incluidos": [
+      "Start",
+      "Go"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Start + Go",
+    "horas_academicas": 200,
+    "valor_full_oficial_cop": 3200000,
+    "fila_combinacion": 15,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 2080000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2080000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 200,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 15,
+      "valores_originales": {
+        "AB15": "1",
+        "AC15": "0.35",
+        "AD15": "2080000",
+        "AE15": "0",
+        "AF15": "2080000",
+        "AG15": "10400",
+        "AH15": "200"
+      },
+      "celdas": {
+        "pagos": "AB15",
+        "descuento": "AC15",
+        "inicial": "AD15",
+        "mensualidad": "AE15",
+        "total": "AF15",
+        "valor_hora": "AG15",
+        "intensidad": "AH15"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO",
+    "modulos_incluidos": [
+      "Start",
+      "Go"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Start + Go",
+    "horas_academicas": 200,
+    "valor_full_oficial_cop": 3200000,
+    "fila_combinacion": 15,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 2,
+    "porcentaje_descuento_exacto": "0.3",
+    "cuota_inicial_minima_cop": 1120000,
+    "cuota_mensual_referencia_cop": 1120000,
+    "valor_total_oficial_cop": 2240000,
+    "valor_por_hora_mostrado_cop": 11200,
+    "maxima_intensidad_mensual_mostrada": 100,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 16,
+      "valores_originales": {
+        "AB16": "2",
+        "AC16": "0.3",
+        "AD16": "1120000",
+        "AE16": "1120000",
+        "AF16": "2240000",
+        "AG16": "11200",
+        "AH16": "100"
+      },
+      "celdas": {
+        "pagos": "AB16",
+        "descuento": "AC16",
+        "inicial": "AD16",
+        "mensualidad": "AE16",
+        "total": "AF16",
+        "valor_hora": "AG16",
+        "intensidad": "AH16"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO",
+    "modulos_incluidos": [
+      "Start",
+      "Go"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Start + Go",
+    "horas_academicas": 200,
+    "valor_full_oficial_cop": 3200000,
+    "fila_combinacion": 15,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 10,
+    "porcentaje_descuento_exacto": "0.2",
+    "cuota_inicial_minima_cop": 256000,
+    "cuota_mensual_referencia_cop": 256000,
+    "valor_total_oficial_cop": 2560000,
+    "valor_por_hora_mostrado_cop": 12800,
+    "maxima_intensidad_mensual_mostrada": 20,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 17,
+      "valores_originales": {
+        "AB17": "10",
+        "AC17": "0.2",
+        "AD17": "256000",
+        "AE17": "256000",
+        "AF17": "2560000",
+        "AG17": "12800",
+        "AH17": "20"
+      },
+      "celdas": {
+        "pagos": "AB17",
+        "descuento": "AC17",
+        "inicial": "AD17",
+        "mensualidad": "AE17",
+        "total": "AF17",
+        "valor_hora": "AG17",
+        "intensidad": "AH17"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW",
+    "modulos_incluidos": [
+      "Go",
+      "Flow"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Go + Flow",
+    "horas_academicas": 230,
+    "valor_full_oficial_cop": 3680000,
+    "fila_combinacion": 18,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 2392000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2392000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 230,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 18,
+      "valores_originales": {
+        "AB18": "1",
+        "AC18": "0.35",
+        "AD18": "2392000",
+        "AE18": "0",
+        "AF18": "2392000",
+        "AG18": "10400",
+        "AH18": "230"
+      },
+      "celdas": {
+        "pagos": "AB18",
+        "descuento": "AC18",
+        "inicial": "AD18",
+        "mensualidad": "AE18",
+        "total": "AF18",
+        "valor_hora": "AG18",
+        "intensidad": "AH18"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW",
+    "modulos_incluidos": [
+      "Go",
+      "Flow"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Go + Flow",
+    "horas_academicas": 230,
+    "valor_full_oficial_cop": 3680000,
+    "fila_combinacion": 18,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 2,
+    "porcentaje_descuento_exacto": "0.3",
+    "cuota_inicial_minima_cop": 1288000,
+    "cuota_mensual_referencia_cop": 1288000,
+    "valor_total_oficial_cop": 2576000,
+    "valor_por_hora_mostrado_cop": 11200,
+    "maxima_intensidad_mensual_mostrada": 115,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 19,
+      "valores_originales": {
+        "AB19": "2",
+        "AC19": "0.3",
+        "AD19": "1288000",
+        "AE19": "1288000",
+        "AF19": "2576000",
+        "AG19": "11200",
+        "AH19": "115"
+      },
+      "celdas": {
+        "pagos": "AB19",
+        "descuento": "AC19",
+        "inicial": "AD19",
+        "mensualidad": "AE19",
+        "total": "AF19",
+        "valor_hora": "AG19",
+        "intensidad": "AH19"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW",
+    "modulos_incluidos": [
+      "Go",
+      "Flow"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Go + Flow",
+    "horas_academicas": 230,
+    "valor_full_oficial_cop": 3680000,
+    "fila_combinacion": 18,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 10,
+    "porcentaje_descuento_exacto": "0.2",
+    "cuota_inicial_minima_cop": 294400,
+    "cuota_mensual_referencia_cop": 294400,
+    "valor_total_oficial_cop": 2944000,
+    "valor_por_hora_mostrado_cop": 12800,
+    "maxima_intensidad_mensual_mostrada": 23,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 20,
+      "valores_originales": {
+        "AB20": "10",
+        "AC20": "0.2",
+        "AD20": "294400",
+        "AE20": "294400",
+        "AF20": "2944000",
+        "AG20": "12800",
+        "AH20": "23"
+      },
+      "celdas": {
+        "pagos": "AB20",
+        "descuento": "AC20",
+        "inicial": "AD20",
+        "mensualidad": "AE20",
+        "total": "AF20",
+        "valor_hora": "AG20",
+        "intensidad": "AH20"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Flow + Plus",
+    "horas_academicas": 260,
+    "valor_full_oficial_cop": 4160000,
+    "fila_combinacion": 21,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 2704000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2704000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 260,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 21,
+      "valores_originales": {
+        "AB21": "1",
+        "AC21": "0.35",
+        "AD21": "2704000",
+        "AE21": "0",
+        "AF21": "2704000",
+        "AG21": "10400",
+        "AH21": "260"
+      },
+      "celdas": {
+        "pagos": "AB21",
+        "descuento": "AC21",
+        "inicial": "AD21",
+        "mensualidad": "AE21",
+        "total": "AF21",
+        "valor_hora": "AG21",
+        "intensidad": "AH21"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Flow + Plus",
+    "horas_academicas": 260,
+    "valor_full_oficial_cop": 4160000,
+    "fila_combinacion": 21,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 2,
+    "porcentaje_descuento_exacto": "0.3",
+    "cuota_inicial_minima_cop": 1456000,
+    "cuota_mensual_referencia_cop": 1456000,
+    "valor_total_oficial_cop": 2912000,
+    "valor_por_hora_mostrado_cop": 11200,
+    "maxima_intensidad_mensual_mostrada": 130,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 22,
+      "valores_originales": {
+        "AB22": "2",
+        "AC22": "0.3",
+        "AD22": "1456000",
+        "AE22": "1456000",
+        "AF22": "2912000",
+        "AG22": "11200",
+        "AH22": "130"
+      },
+      "celdas": {
+        "pagos": "AB22",
+        "descuento": "AC22",
+        "inicial": "AD22",
+        "mensualidad": "AE22",
+        "total": "AF22",
+        "valor_hora": "AG22",
+        "intensidad": "AH22"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Flow + Plus",
+    "horas_academicas": 260,
+    "valor_full_oficial_cop": 4160000,
+    "fila_combinacion": 21,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 10,
+    "porcentaje_descuento_exacto": "0.2",
+    "cuota_inicial_minima_cop": 332800,
+    "cuota_mensual_referencia_cop": 332800,
+    "valor_total_oficial_cop": 3328000,
+    "valor_por_hora_mostrado_cop": 12800,
+    "maxima_intensidad_mensual_mostrada": 26,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 23,
+      "valores_originales": {
+        "AB23": "10",
+        "AC23": "0.2",
+        "AD23": "332800",
+        "AE23": "332800",
+        "AF23": "3328000",
+        "AG23": "12800",
+        "AH23": "26"
+      },
+      "celdas": {
+        "pagos": "AB23",
+        "descuento": "AC23",
+        "inicial": "AD23",
+        "mensualidad": "AE23",
+        "total": "AF23",
+        "valor_hora": "AG23",
+        "intensidad": "AH23"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PLUS_PRO",
+    "modulos_incluidos": [
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Plus + Pro",
+    "horas_academicas": 280,
+    "valor_full_oficial_cop": 4480000,
+    "fila_combinacion": 24,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 2912000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2912000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 280,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 24,
+      "valores_originales": {
+        "AB24": "1",
+        "AC24": "0.35",
+        "AD24": "2912000",
+        "AE24": "0",
+        "AF24": "2912000",
+        "AG24": "10400",
+        "AH24": "280"
+      },
+      "celdas": {
+        "pagos": "AB24",
+        "descuento": "AC24",
+        "inicial": "AD24",
+        "mensualidad": "AE24",
+        "total": "AF24",
+        "valor_hora": "AG24",
+        "intensidad": "AH24"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PLUS_PRO",
+    "modulos_incluidos": [
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Plus + Pro",
+    "horas_academicas": 280,
+    "valor_full_oficial_cop": 4480000,
+    "fila_combinacion": 24,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 2,
+    "porcentaje_descuento_exacto": "0.3",
+    "cuota_inicial_minima_cop": 1568000,
+    "cuota_mensual_referencia_cop": 1568000,
+    "valor_total_oficial_cop": 3136000,
+    "valor_por_hora_mostrado_cop": 11200,
+    "maxima_intensidad_mensual_mostrada": 140,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 25,
+      "valores_originales": {
+        "AB25": "2",
+        "AC25": "0.3",
+        "AD25": "1568000",
+        "AE25": "1568000",
+        "AF25": "3136000",
+        "AG25": "11200",
+        "AH25": "140"
+      },
+      "celdas": {
+        "pagos": "AB25",
+        "descuento": "AC25",
+        "inicial": "AD25",
+        "mensualidad": "AE25",
+        "total": "AF25",
+        "valor_hora": "AG25",
+        "intensidad": "AH25"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_PLUS_PRO",
+    "modulos_incluidos": [
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 2,
+    "nombre_plan_interfaz": "Plus + Pro",
+    "horas_academicas": 280,
+    "valor_full_oficial_cop": 4480000,
+    "fila_combinacion": 24,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 10,
+    "porcentaje_descuento_exacto": "0.2",
+    "cuota_inicial_minima_cop": 358400,
+    "cuota_mensual_referencia_cop": 358400,
+    "valor_total_oficial_cop": 3584000,
+    "valor_por_hora_mostrado_cop": 12800,
+    "maxima_intensidad_mensual_mostrada": 28,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 26,
+      "valores_originales": {
+        "AB26": "10",
+        "AC26": "0.2",
+        "AD26": "358400",
+        "AE26": "358400",
+        "AF26": "3584000",
+        "AG26": "12800",
+        "AH26": "28"
+      },
+      "celdas": {
+        "pagos": "AB26",
+        "descuento": "AC26",
+        "inicial": "AD26",
+        "mensualidad": "AE26",
+        "total": "AF26",
+        "valor_hora": "AG26",
+        "intensidad": "AH26"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Start + Go + Flow",
+    "horas_academicas": 320,
+    "valor_full_oficial_cop": 5120000,
+    "fila_combinacion": 27,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.5",
+    "cuota_inicial_minima_cop": 2560000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2560000,
+    "valor_por_hora_mostrado_cop": 8000,
+    "maxima_intensidad_mensual_mostrada": 320,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 27,
+      "valores_originales": {
+        "AB27": "1",
+        "AC27": "0.49999999999999994",
+        "AD27": "2560000.0000000005",
+        "AE27": "0",
+        "AF27": "2560000.0000000005",
+        "AG27": "8000.0000000000018",
+        "AH27": "320"
+      },
+      "celdas": {
+        "pagos": "AB27",
+        "descuento": "AC27",
+        "inicial": "AD27",
+        "mensualidad": "AE27",
+        "total": "AF27",
+        "valor_hora": "AG27",
+        "intensidad": "AH27"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Start + Go + Flow",
+    "horas_academicas": 320,
+    "valor_full_oficial_cop": 5120000,
+    "fila_combinacion": 27,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 3,
+    "porcentaje_descuento_exacto": "0.45",
+    "cuota_inicial_minima_cop": 938667,
+    "cuota_mensual_referencia_cop": 938667,
+    "valor_total_oficial_cop": 2816000,
+    "valor_por_hora_mostrado_cop": 8800,
+    "maxima_intensidad_mensual_mostrada": 107,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 28,
+      "valores_originales": {
+        "AB28": "3",
+        "AC28": "0.44999999999999996",
+        "AD28": "938666.66666666663",
+        "AE28": "938666.66666666674",
+        "AF28": "2816000",
+        "AG28": "8800",
+        "AH28": "106.66666666666667"
+      },
+      "celdas": {
+        "pagos": "AB28",
+        "descuento": "AC28",
+        "inicial": "AD28",
+        "mensualidad": "AE28",
+        "total": "AF28",
+        "valor_hora": "AG28",
+        "intensidad": "AH28"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Start + Go + Flow",
+    "horas_academicas": 320,
+    "valor_full_oficial_cop": 5120000,
+    "fila_combinacion": 27,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 12,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 277333,
+    "cuota_mensual_referencia_cop": 277333,
+    "valor_total_oficial_cop": 3328000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 27,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 29,
+      "valores_originales": {
+        "AB29": "12",
+        "AC29": "0.35",
+        "AD29": "277333.33333333331",
+        "AE29": "277333.33333333331",
+        "AF29": "3328000",
+        "AG29": "10400",
+        "AH29": "26.666666666666668"
+      },
+      "celdas": {
+        "pagos": "AB29",
+        "descuento": "AC29",
+        "inicial": "AD29",
+        "mensualidad": "AE29",
+        "total": "AF29",
+        "valor_hora": "AG29",
+        "intensidad": "AH29"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Go",
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Go + Flow + Plus",
+    "horas_academicas": 370,
+    "valor_full_oficial_cop": 5920000,
+    "fila_combinacion": 30,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.5",
+    "cuota_inicial_minima_cop": 2960000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2960000,
+    "valor_por_hora_mostrado_cop": 8000,
+    "maxima_intensidad_mensual_mostrada": 370,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 30,
+      "valores_originales": {
+        "AB30": "1",
+        "AC30": "0.49999999999999994",
+        "AD30": "2960000.0000000005",
+        "AE30": "0",
+        "AF30": "2960000.0000000005",
+        "AG30": "8000.0000000000009",
+        "AH30": "370"
+      },
+      "celdas": {
+        "pagos": "AB30",
+        "descuento": "AC30",
+        "inicial": "AD30",
+        "mensualidad": "AE30",
+        "total": "AF30",
+        "valor_hora": "AG30",
+        "intensidad": "AH30"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Go",
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Go + Flow + Plus",
+    "horas_academicas": 370,
+    "valor_full_oficial_cop": 5920000,
+    "fila_combinacion": 30,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 3,
+    "porcentaje_descuento_exacto": "0.45",
+    "cuota_inicial_minima_cop": 1085333,
+    "cuota_mensual_referencia_cop": 1085333,
+    "valor_total_oficial_cop": 3256000,
+    "valor_por_hora_mostrado_cop": 8800,
+    "maxima_intensidad_mensual_mostrada": 123,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 31,
+      "valores_originales": {
+        "AB31": "3",
+        "AC31": "0.44999999999999996",
+        "AD31": "1085333.3333333335",
+        "AE31": "1085333.3333333335",
+        "AF31": "3256000.0000000005",
+        "AG31": "8800.0000000000018",
+        "AH31": "123.33333333333333"
+      },
+      "celdas": {
+        "pagos": "AB31",
+        "descuento": "AC31",
+        "inicial": "AD31",
+        "mensualidad": "AE31",
+        "total": "AF31",
+        "valor_hora": "AG31",
+        "intensidad": "AH31"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Go",
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Go + Flow + Plus",
+    "horas_academicas": 370,
+    "valor_full_oficial_cop": 5920000,
+    "fila_combinacion": 30,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 12,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 320667,
+    "cuota_mensual_referencia_cop": 320667,
+    "valor_total_oficial_cop": 3848000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 31,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 32,
+      "valores_originales": {
+        "AB32": "12",
+        "AC32": "0.35",
+        "AD32": "320666.66666666669",
+        "AE32": "320666.66666666669",
+        "AF32": "3848000",
+        "AG32": "10400",
+        "AH32": "30.833333333333332"
+      },
+      "celdas": {
+        "pagos": "AB32",
+        "descuento": "AC32",
+        "inicial": "AD32",
+        "mensualidad": "AE32",
+        "total": "AF32",
+        "valor_hora": "AG32",
+        "intensidad": "AH32"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Flow + Plus + Pro",
+    "horas_academicas": 400,
+    "valor_full_oficial_cop": 6400000,
+    "fila_combinacion": 33,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.5",
+    "cuota_inicial_minima_cop": 3200000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 3200000,
+    "valor_por_hora_mostrado_cop": 8000,
+    "maxima_intensidad_mensual_mostrada": 400,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 33,
+      "valores_originales": {
+        "AB33": "1",
+        "AC33": "0.49999999999999994",
+        "AD33": "3200000.0000000005",
+        "AE33": "0",
+        "AF33": "3200000.0000000005",
+        "AG33": "8000.0000000000009",
+        "AH33": "400"
+      },
+      "celdas": {
+        "pagos": "AB33",
+        "descuento": "AC33",
+        "inicial": "AD33",
+        "mensualidad": "AE33",
+        "total": "AF33",
+        "valor_hora": "AG33",
+        "intensidad": "AH33"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Flow + Plus + Pro",
+    "horas_academicas": 400,
+    "valor_full_oficial_cop": 6400000,
+    "fila_combinacion": 33,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 3,
+    "porcentaje_descuento_exacto": "0.45",
+    "cuota_inicial_minima_cop": 1173333,
+    "cuota_mensual_referencia_cop": 1173333,
+    "valor_total_oficial_cop": 3520000,
+    "valor_por_hora_mostrado_cop": 8800,
+    "maxima_intensidad_mensual_mostrada": 133,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 34,
+      "valores_originales": {
+        "AB34": "3",
+        "AC34": "0.44999999999999996",
+        "AD34": "1173333.3333333335",
+        "AE34": "1173333.3333333335",
+        "AF34": "3520000.0000000005",
+        "AG34": "8800.0000000000018",
+        "AH34": "133.33333333333334"
+      },
+      "celdas": {
+        "pagos": "AB34",
+        "descuento": "AC34",
+        "inicial": "AD34",
+        "mensualidad": "AE34",
+        "total": "AF34",
+        "valor_hora": "AG34",
+        "intensidad": "AH34"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 3,
+    "nombre_plan_interfaz": "Flow + Plus + Pro",
+    "horas_academicas": 400,
+    "valor_full_oficial_cop": 6400000,
+    "fila_combinacion": 33,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 12,
+    "porcentaje_descuento_exacto": "0.35",
+    "cuota_inicial_minima_cop": 346667,
+    "cuota_mensual_referencia_cop": 346667,
+    "valor_total_oficial_cop": 4160000,
+    "valor_por_hora_mostrado_cop": 10400,
+    "maxima_intensidad_mensual_mostrada": 33,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 35,
+      "valores_originales": {
+        "AB35": "12",
+        "AC35": "0.35",
+        "AD35": "346666.66666666669",
+        "AE35": "346666.66666666669",
+        "AF35": "4160000",
+        "AG35": "10400",
+        "AH35": "33.333333333333336"
+      },
+      "celdas": {
+        "pagos": "AB35",
+        "descuento": "AC35",
+        "inicial": "AD35",
+        "mensualidad": "AE35",
+        "total": "AF35",
+        "valor_hora": "AG35",
+        "intensidad": "AH35"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 4,
+    "nombre_plan_interfaz": "Start + Go + Flow + Plus",
+    "horas_academicas": 460,
+    "valor_full_oficial_cop": 7360000,
+    "fila_combinacion": 36,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.6",
+    "cuota_inicial_minima_cop": 2944000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2944000,
+    "valor_por_hora_mostrado_cop": 6400,
+    "maxima_intensidad_mensual_mostrada": 460,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 36,
+      "valores_originales": {
+        "AB36": "1",
+        "AC36": "0.60000000000000009",
+        "AD36": "2943999.9999999991",
+        "AE36": "0",
+        "AF36": "2943999.9999999991",
+        "AG36": "6399.9999999999982",
+        "AH36": "460"
+      },
+      "celdas": {
+        "pagos": "AB36",
+        "descuento": "AC36",
+        "inicial": "AD36",
+        "mensualidad": "AE36",
+        "total": "AF36",
+        "valor_hora": "AG36",
+        "intensidad": "AH36"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 4,
+    "nombre_plan_interfaz": "Start + Go + Flow + Plus",
+    "horas_academicas": 460,
+    "valor_full_oficial_cop": 7360000,
+    "fila_combinacion": 36,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 4,
+    "porcentaje_descuento_exacto": "0.55",
+    "cuota_inicial_minima_cop": 828000,
+    "cuota_mensual_referencia_cop": 828000,
+    "valor_total_oficial_cop": 3312000,
+    "valor_por_hora_mostrado_cop": 7200,
+    "maxima_intensidad_mensual_mostrada": 115,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 37,
+      "valores_originales": {
+        "AB37": "4",
+        "AC37": "0.55000000000000004",
+        "AD37": "827999.99999999988",
+        "AE37": "827999.99999999988",
+        "AF37": "3311999.9999999995",
+        "AG37": "7199.9999999999991",
+        "AH37": "115"
+      },
+      "celdas": {
+        "pagos": "AB37",
+        "descuento": "AC37",
+        "inicial": "AD37",
+        "mensualidad": "AE37",
+        "total": "AF37",
+        "valor_hora": "AG37",
+        "intensidad": "AH37"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW_PLUS",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow",
+      "Plus"
+    ],
+    "numero_modulos": 4,
+    "nombre_plan_interfaz": "Start + Go + Flow + Plus",
+    "horas_academicas": 460,
+    "valor_full_oficial_cop": 7360000,
+    "fila_combinacion": 36,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 14,
+    "porcentaje_descuento_exacto": "0.45",
+    "cuota_inicial_minima_cop": 289143,
+    "cuota_mensual_referencia_cop": 289143,
+    "valor_total_oficial_cop": 4048000,
+    "valor_por_hora_mostrado_cop": 8800,
+    "maxima_intensidad_mensual_mostrada": 33,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 38,
+      "valores_originales": {
+        "AB38": "14",
+        "AC38": "0.44999999999999996",
+        "AD38": "289142.85714285716",
+        "AE38": "289142.85714285716",
+        "AF38": "4048000.0000000005",
+        "AG38": "8800.0000000000018",
+        "AH38": "32.857142857142854"
+      },
+      "celdas": {
+        "pagos": "AB38",
+        "descuento": "AC38",
+        "inicial": "AD38",
+        "mensualidad": "AE38",
+        "total": "AF38",
+        "valor_hora": "AG38",
+        "intensidad": "AH38"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Go",
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 4,
+    "nombre_plan_interfaz": "Go + Flow + Plus + Pro",
+    "horas_academicas": 510,
+    "valor_full_oficial_cop": 8160000,
+    "fila_combinacion": 39,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.6",
+    "cuota_inicial_minima_cop": 3264000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 3264000,
+    "valor_por_hora_mostrado_cop": 6400,
+    "maxima_intensidad_mensual_mostrada": 510,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 39,
+      "valores_originales": {
+        "AB39": "1",
+        "AC39": "0.60000000000000009",
+        "AD39": "3263999.9999999991",
+        "AE39": "0",
+        "AF39": "3263999.9999999991",
+        "AG39": "6399.9999999999982",
+        "AH39": "510"
+      },
+      "celdas": {
+        "pagos": "AB39",
+        "descuento": "AC39",
+        "inicial": "AD39",
+        "mensualidad": "AE39",
+        "total": "AF39",
+        "valor_hora": "AG39",
+        "intensidad": "AH39"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Go",
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 4,
+    "nombre_plan_interfaz": "Go + Flow + Plus + Pro",
+    "horas_academicas": 510,
+    "valor_full_oficial_cop": 8160000,
+    "fila_combinacion": 39,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 4,
+    "porcentaje_descuento_exacto": "0.55",
+    "cuota_inicial_minima_cop": 918000,
+    "cuota_mensual_referencia_cop": 918000,
+    "valor_total_oficial_cop": 3672000,
+    "valor_por_hora_mostrado_cop": 7200,
+    "maxima_intensidad_mensual_mostrada": 128,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 40,
+      "valores_originales": {
+        "AB40": "4",
+        "AC40": "0.55000000000000004",
+        "AD40": "918000",
+        "AE40": "918000",
+        "AF40": "3672000",
+        "AG40": "7200",
+        "AH40": "127.5"
+      },
+      "celdas": {
+        "pagos": "AB40",
+        "descuento": "AC40",
+        "inicial": "AD40",
+        "mensualidad": "AE40",
+        "total": "AF40",
+        "valor_hora": "AG40",
+        "intensidad": "AH40"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_GO_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Go",
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 4,
+    "nombre_plan_interfaz": "Go + Flow + Plus + Pro",
+    "horas_academicas": 510,
+    "valor_full_oficial_cop": 8160000,
+    "fila_combinacion": 39,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 14,
+    "porcentaje_descuento_exacto": "0.45",
+    "cuota_inicial_minima_cop": 320571,
+    "cuota_mensual_referencia_cop": 320571,
+    "valor_total_oficial_cop": 4488000,
+    "valor_por_hora_mostrado_cop": 8800,
+    "maxima_intensidad_mensual_mostrada": 36,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 41,
+      "valores_originales": {
+        "AB41": "14",
+        "AC41": "0.44999999999999996",
+        "AD41": "320571.42857142858",
+        "AE41": "320571.42857142858",
+        "AF41": "4488000",
+        "AG41": "8800",
+        "AH41": "36.428571428571431"
+      },
+      "celdas": {
+        "pagos": "AB41",
+        "descuento": "AC41",
+        "inicial": "AD41",
+        "mensualidad": "AE41",
+        "total": "AF41",
+        "valor_hora": "AG41",
+        "intensidad": "AH41"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 5,
+    "nombre_plan_interfaz": "Start + Go + Flow + Plus + Pro",
+    "horas_academicas": 600,
+    "valor_full_oficial_cop": 9600000,
+    "fila_combinacion": 42,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 1,
+    "porcentaje_descuento_exacto": "0.7",
+    "cuota_inicial_minima_cop": 2880000,
+    "cuota_mensual_referencia_cop": 0,
+    "valor_total_oficial_cop": 2880000,
+    "valor_por_hora_mostrado_cop": 4800,
+    "maxima_intensidad_mensual_mostrada": 600,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 42,
+      "valores_originales": {
+        "AB42": "1",
+        "AC42": "0.70000000000000018",
+        "AD42": "2879999.9999999981",
+        "AE42": "0",
+        "AF42": "2879999.9999999981",
+        "AG42": "4799.9999999999973",
+        "AH42": "600"
+      },
+      "celdas": {
+        "pagos": "AB42",
+        "descuento": "AC42",
+        "inicial": "AD42",
+        "mensualidad": "AE42",
+        "total": "AF42",
+        "valor_hora": "AG42",
+        "intensidad": "AH42"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 5,
+    "nombre_plan_interfaz": "Start + Go + Flow + Plus + Pro",
+    "horas_academicas": 600,
+    "valor_full_oficial_cop": 9600000,
+    "fila_combinacion": 42,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 5,
+    "porcentaje_descuento_exacto": "0.65",
+    "cuota_inicial_minima_cop": 672000,
+    "cuota_mensual_referencia_cop": 672000,
+    "valor_total_oficial_cop": 3360000,
+    "valor_por_hora_mostrado_cop": 5600,
+    "maxima_intensidad_mensual_mostrada": 120,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 43,
+      "valores_originales": {
+        "AB43": "5",
+        "AC43": "0.65000000000000013",
+        "AD43": "671999.99999999977",
+        "AE43": "671999.99999999977",
+        "AF43": "3359999.9999999991",
+        "AG43": "5599.9999999999982",
+        "AH43": "120"
+      },
+      "celdas": {
+        "pagos": "AB43",
+        "descuento": "AC43",
+        "inicial": "AD43",
+        "mensualidad": "AE43",
+        "total": "AF43",
+        "valor_hora": "AG43",
+        "intensidad": "AH43"
+      }
+    }
+  },
+  {
+    "plan_id": "MIX_START_GO_FLOW_PLUS_PRO",
+    "modulos_incluidos": [
+      "Start",
+      "Go",
+      "Flow",
+      "Plus",
+      "Pro"
+    ],
+    "numero_modulos": 5,
+    "nombre_plan_interfaz": "Start + Go + Flow + Plus + Pro",
+    "horas_academicas": 600,
+    "valor_full_oficial_cop": 9600000,
+    "fila_combinacion": 42,
+    "idioma_id": "INGLES",
+    "idioma_nombre": "Inglés",
+    "producto_id": "SMART_MIX",
+    "condicion_id": "COLABORADOR",
+    "condicion_comercial": "Colaborador",
+    "numero_pagos": 15,
+    "porcentaje_descuento_exacto": "0.5",
+    "cuota_inicial_minima_cop": 320000,
+    "cuota_mensual_referencia_cop": 320000,
+    "valor_total_oficial_cop": 4800000,
+    "valor_por_hora_mostrado_cop": 8000,
+    "maxima_intensidad_mensual_mostrada": 40,
+    "fuente": {
+      "hoja": "Tarifas Mix - Inglés",
+      "fila": 44,
+      "valores_originales": {
+        "AB44": "15",
+        "AC44": "0.49999999999999994",
+        "AD44": "320000.00000000006",
+        "AE44": "320000.00000000006",
+        "AF44": "4800000.0000000009",
+        "AG44": "8000.0000000000018",
+        "AH44": "40"
+      },
+      "celdas": {
+        "pagos": "AB44",
+        "descuento": "AC44",
+        "inicial": "AD44",
+        "mensualidad": "AE44",
+        "total": "AF44",
+        "valor_hora": "AG44",
+        "intensidad": "AH44"
+      }
+    }
   }
 ];
-records.forEach(function(r) { Object.freeze(r.modulos_incluidos); Object.freeze(r.fuente.celdas); Object.freeze(r.fuente); Object.freeze(r); });
+records.forEach(function(r) { Object.freeze(r.modulos_incluidos); Object.freeze(r.fuente.celdas); if (r.fuente.valores_originales) { Object.freeze(r.fuente.valores_originales); } Object.freeze(r.fuente); Object.freeze(r); });
 global.SMART_TARIFAS_MIX = Object.freeze(records);
 })(typeof window !== "undefined" ? window : globalThis);

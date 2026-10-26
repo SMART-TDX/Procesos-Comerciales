@@ -1353,6 +1353,7 @@
   var catalogsReady = Boolean(siteValidation.valida && tariffValidation.valid && additionalValidation.valida && campaignValidation.valida);
   global.SMART_CONFIG_DIAGNOSTICS = Object.freeze({ producto:"SMART MIX", sedes:siteValidation, tarifas:tariffValidation, adicionales:additionalValidation, campanas:campaignValidation, jefesVentas:salesManagerValidation, configuracionValida:catalogsReady });
   var currentTariff = null;
+  var previousCondition = "";
   var currentCalculation = null;
   var selectedAdditionalIds = new Set();
   var selectedAdditionalOptions = {};
@@ -1767,6 +1768,7 @@
     var items = uniqueBy(mixTariffs, "condicion_id");
     replaceOptions(elements.condicion, items, "condicion_id", "condicion_comercial", preferred || "", "Selecciona una condición");
     elements.condicion.disabled = !selectedSite();
+    previousCondition = elements.condicion.value;
   }
 
   function paymentOptionLabel(number) {
@@ -2637,7 +2639,20 @@
 
   function handlePlanChange() { markModified(); clearAdditionalSelection(); populatePaymentOptions(""); clearCalculatedProposal(); updateProgressiveForm(4); }
 
-  function handleConditionChange() { markModified(); clearAdditionalSelection(); populatePlans(""); populatePaymentOptions(""); clearCalculatedProposal(); updateProgressiveForm(3); }
+  function handleConditionChange() {
+    var collaboratorTransition = previousCondition === "COLABORADOR" || elements.condicion.value === "COLABORADOR";
+    var compatiblePlan = collaboratorTransition ? elements.plan.value : "";
+    var compatiblePayments = collaboratorTransition ? elements["numero-pagos"].value : "";
+    previousCondition = elements.condicion.value;
+    markModified();
+    if (!collaboratorTransition) { clearAdditionalSelection(); }
+    populatePlans(compatiblePlan);
+    populatePaymentOptions(compatiblePayments);
+    clearCalculatedProposal();
+    // Conserva los datos compatibles; inicial, capacidad y acuerdo se confirman de nuevo.
+    if (collaboratorTransition && findSelectedTariff()) { synchronizeTariff(true); }
+    updateProgressiveForm(elements.plan.value ? 4 : 3);
+  }
 
   function handlePaymentChange() {
     markModified();
@@ -2785,72 +2800,7 @@
     preparedWhatsAppMessage = "";
     showValidation([]);
     renderProposal();
-    registerSmartMixQuote("PREPARADA");
     showToast(ensureFinalPeriod("Cotización generada. Vigente hasta el " + formatBogotaDateTime(quote.expiresAt)));
-  }
-
-  function smartMixRegistrationPayload(stage) {
-    if (!quote.reference || !quote.generatedAt || !quote.expiresAt || !currentTariff || !currentCalculation) { return null; }
-    var manager = selectedSalesManager();
-    var snapshots = Array.isArray(quote.additionalSnapshot) ? quote.additionalSnapshot : [];
-    var listValue = Number(currentTariff.valor_full_oficial_cop || 0);
-    var finalValue = Number(currentTariff.valor_total_oficial_cop || 0);
-    var initialValue = Number(currentCalculation.initialCop || 0);
-    return {
-      destino_pestana: "Smart Mix", origen_formulario: "SMART_MIX", etapa_registro: stage,
-      id_cotizacion: quote.reference, fecha_generacion: quote.generatedAt, fecha_vencimiento: quote.expiresAt,
-      nombre_cliente: elements.cliente.value.trim(), celular_cliente: normalizedClientPhone() || "",
-      correo_cliente: elements["cliente-correo"].value.trim(), nombre_comercial: elements.asesor.value.trim(),
-      correo_comercial: "", regional_ciudad: elements["jefe-ventas-regional"].value || elements["ciudad-zona"].value || "",
-      nombre_jefe_ventas: manager ? manager.nombre : "", correo_jefe_ventas: manager ? manager.correo : "",
-      sede: currentSiteName(), idioma: currentTariff.idioma_nombre || currentLanguageName(),
-      plan_tarifario: currentTariff.plan_id || "", programa: clientProgramDisplayName(currentTariff),
-      condicion_comercial: currentTariff.condicion_comercial || "",
-      modulos_incluidos: Array.isArray(currentTariff.modulos_incluidos) ? currentTariff.modulos_incluidos.join(", ") : (currentTariff.modulos_incluidos || ""),
-      horas_academicas: Number(currentTariff.horas_academicas || 0),
-      numero_pagos: Number(currentCalculation.rows.length || currentTariff.numero_pagos || 0),
-      forma_pago: currentTariff.numero_pagos === 1 ? "CONTADO" : "FINANCIADO",
-      valor_lista: listValue, porcentaje_descuento: Number(currentTariff.porcentaje_descuento_exacto || 0),
-      valor_descuento: Math.max(0, listValue - finalValue), valor_final_contrato: finalValue,
-      valor_cuota_inicial: initialValue,
-      saldo_financiar: Number(currentCalculation.pendingBalanceCop || Math.max(0, finalValue - initialValue)),
-      valor_cuotas_posteriores: Number(currentCalculation.regularMonthlyCop || 0),
-      valor_ultima_cuota: Number(currentCalculation.lastMonthlyCop || 0),
-      fecha_matricula: elements["fecha-matricula"].value || "",
-      fecha_acreditacion_pago_inicial: elements["fecha-acreditacion-pago-inicial-estimada"].value || "",
-      fecha_primera_cuota: elements["fecha-primera-cuota"].value || "",
-      capacidad_mensual: Number(elements["capacidad-mensual"].value || 0),
-      mensualidades_deseadas: Number(elements["mensualidades-deseadas"].value || 0),
-      beneficios: snapshots.map(function (item) { return item.titulo_cliente || ""; }),
-      valor_beneficios: snapshots.reduce(function (total, item) { return total + Number(item.valueCop || 0); }, 0),
-      campana: quote.campaignId || "", observacion: elements.observacion.value.trim(),
-      estado: quote.status, fecha_registro: new Date().toISOString()
-    };
-  }
-
-  function registerSmartMixQuote(stage) {
-    var configuration = global.SMART_REGISTRO_COTIZACIONES || {};
-    var endpoint = String(configuration.endpoint || "").trim();
-    var phase = stage === "FINALIZADA" ? "FINALIZADA" : "PREPARADA";
-    if (!configuration.activo || !endpoint) { return false; }
-    quote.registrationStages = quote.registrationStages || {};
-    if (quote.registrationStages[phase]) { return true; }
-    var payload = smartMixRegistrationPayload(phase);
-    if (!payload) { return false; }
-    try {
-      var body = JSON.stringify(payload);
-      if (global.navigator && typeof global.navigator.sendBeacon === "function") {
-        var sent = global.navigator.sendBeacon(endpoint, body);
-        if (sent) { quote.registrationStages[phase] = true; return true; }
-      }
-      var targetName = "smart-mix-registro-" + Date.now() + "-" + Math.random().toString(16).slice(2);
-      var frame = document.createElement("iframe"); var form = document.createElement("form"); var input = document.createElement("input");
-      frame.name = targetName; frame.hidden = true; form.method = "POST"; form.action = endpoint; form.target = targetName; form.hidden = true;
-      input.type = "hidden"; input.name = "payload"; input.value = body; form.appendChild(input);
-      document.body.append(frame, form); quote.registrationStages[phase] = true; form.submit();
-      global.setTimeout(function () { form.remove(); frame.remove(); }, 15000);
-      return true;
-    } catch (error) { console.warn("No fue posible registrar la cotizaciÃ³n Smart Mix.", error); return false; }
   }
 
   function currentNegotiationSignature() {
@@ -4800,78 +4750,6 @@
     }
   }
 
-  async function downloadPreparedDocumentAsPdf(session, fileName) {
-    if (typeof global.html2pdf !== "function") {
-      throw new Error("MOTOR_PDF_NO_DISPONIBLE");
-    }
-    var host = elements["print-document"];
-    var previousHostStyle = host.getAttribute("style");
-    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
-    var previousSheetStyles = sheets.map(function (sheet) {
-      return sheet.getAttribute("style");
-    });
-    if (!sheets.length) {
-      throw new Error("DOCUMENTO_PDF_VACIO");
-    }
-
-    host.classList.add("is-measuring", "print-active");
-    host.setAttribute("aria-hidden", "false");
-    host.style.left = "0";
-    host.style.zIndex = "-1000";
-    host.style.pointerEvents = "none";
-    sheets.forEach(function (sheet) {
-      sheet.style.setProperty("break-before", "auto", "important");
-      sheet.style.setProperty("break-after", "auto", "important");
-      sheet.style.setProperty("page-break-before", "auto", "important");
-      sheet.style.setProperty("page-break-after", "auto", "important");
-      sheet.style.setProperty("height", "296.8mm", "important");
-    });
-
-    try {
-      var pdfOptions = {
-        margin: 0,
-        filename: fileName || "Cotizacion_Smart_Mix.pdf",
-        image: { type: "jpeg", quality: 0.96 },
-        html2canvas: {
-          scale: 1.35,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: 794
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
-      };
-      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
-      var pdf = await firstWorker.get("pdf");
-      while (pdf.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.getNumberOfPages());
-      }
-      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
-        var canvas = await global.html2pdf()
-          .set(pdfOptions)
-          .from(sheets[sheetIndex])
-          .toCanvas()
-          .get("canvas");
-        pdf.addPage("a4", "portrait");
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
-      }
-      pdf.save(pdfOptions.filename);
-    } finally {
-      sheets.forEach(function (sheet, index) {
-        if (previousSheetStyles[index] === null) {
-          sheet.removeAttribute("style");
-        } else {
-          sheet.setAttribute("style", previousSheetStyles[index]);
-        }
-      });
-      if (previousHostStyle === null) {
-        host.removeAttribute("style");
-      } else {
-        host.setAttribute("style", previousHostStyle);
-      }
-    }
-  }
-
   async function continuePrinting() {
     if (isPrinting) {
       showToast("Ya existe una impresión en preparación. Espera a que finalice.");
@@ -4902,20 +4780,8 @@
       session.documentTitleBeforePrint = document.title;
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
-      updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
-      showToast("Generando y descargando el PDF...");
-      try {
-        await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
-        registerSmartMixQuote("FINALIZADA");
-        cleanupPrintSession("descarga_pdf_directa");
-        showToast("PDF descargado correctamente.");
-      } catch (error) {
-        cleanupPrintSession("descarga_pdf_fallida");
-        showToast(error && error.message === "MOTOR_PDF_NO_DISPONIBLE"
-          ? "No cargó el generador de PDF. Actualiza la página e inténtalo nuevamente."
-          : "No fue posible descargar el PDF. Reintenta la descarga.");
-      }
-      return;
+      updateLastPrintDiagnostics({ destinoPdfPreparado: true });
+      showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
     }
     printLaunchTimer = global.setTimeout(function () {
       printLaunchTimer = null;
@@ -4924,7 +4790,6 @@
       }
       try {
         if (!ensureCurrentQuote()) { cleanupPrintSession("cotizacion_modificada_antes_de_imprimir"); return; }
-        registerSmartMixQuote("FINALIZADA");
         global.print();
       } catch (error) {
         showToast("No fue posible abrir el diálogo de impresión. Reintenta la impresión.");
@@ -4951,10 +4816,6 @@
     pendingPrintFileName = saveAsPdf
       ? (suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId)))
       : "";
-    if (saveAsPdf) {
-      continuePrinting();
-      return;
-    }
     if (typeof elements["print-guidance-dialog"].showModal === "function") {
       elements["print-guidance-dialog"].showModal();
     } else {

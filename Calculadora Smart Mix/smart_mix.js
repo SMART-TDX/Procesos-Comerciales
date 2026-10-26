@@ -1,7 +1,7 @@
 /* Reglas propias de Smart Mix. Importes y alternativas proceden del catálogo aprobado. */
 (function (global) {
   "use strict";
-  var CONDITIONS = Object.freeze(["PRECIO_AL_PUBLICO", "ALIANZA_MASIVA", "ALIANZA_EMPRESARIAL"]);
+  var CONDITIONS = Object.freeze(["PRECIO_AL_PUBLICO", "ALIANZA_MASIVA", "ALIANZA_EMPRESARIAL", "COLABORADOR"]);
   function roundDivide(numerator, denominator) {
     if (!Number.isSafeInteger(numerator) || numerator < 0 || !Number.isSafeInteger(denominator) || denominator < 1) {
       throw new Error("Importe o divisor inválido.");
@@ -39,8 +39,11 @@
       return result;
     }
     var longest = plans[plans.length - 1] === tariff;
-    var compare = longest && previous && previous.numero_pagos > 1;
-    var minimum = tariff.numero_pagos === 2 ? 1 : 2;
+    // Colaborador: S + 1 .. P pagos totales, es decir S .. P - 1 mensualidades.
+    // Las otras condiciones conservan su comparación de mensualidades aprobada.
+    var structuralBoundary = tariff.condicion_id === "COLABORADOR";
+    var compare = !structuralBoundary && longest && previous && previous.numero_pagos > 1;
+    var minimum = structuralBoundary ? (previous ? previous.numero_pagos : 1) : (tariff.numero_pagos === 2 ? 1 : 2);
     var previousBalance = compare ? previous.valor_total_oficial_cop - initial : 0;
     for (var months = tariff.numero_pagos - 1; months >= minimum; months -= 1) {
       var monthly = roundDivide(tariff.valor_total_oficial_cop - initial, months);
@@ -94,7 +97,10 @@
       });
       if (!Array.isArray(item.modulos_incluidos) || item.modulos_incluidos.length !== item.numero_modulos) { errors.push("Módulos inconsistentes."); }
     });
-    if (packages.size !== 15 || keys.size !== 120) { errors.push("El catálogo oficial está incompleto."); }
+    if (packages.size !== 15 || keys.size !== 160 || CONDITIONS.some(function(condition) {
+      var records = (catalog || []).filter(function(item) { return item.condicion_id === condition; });
+      return records.length !== 40 || new Set(records.map(function(item) { return item.plan_id; })).size !== 15;
+    })) { errors.push("El catálogo oficial está incompleto."); }
     return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors), counts: { total: keys.size, combinaciones: packages.size } });
   }
   global.SMART_MIX_CORE = Object.freeze({ CONDITIONS: CONDITIONS, roundDivide: roundDivide,
