@@ -243,6 +243,15 @@
             <p id="plazo-advertencia" class="finance-empty-help" role="status" hidden></p>
           </div>
 
+          <section id="oferta-pronto" class="early-offer" hidden>
+            <h4>Beneficio especial de Pronto Pago</h4>
+            <label><input type="checkbox" id="pronto-activo"> Ofrecer precio de contado con plazo especial</label>
+            <p>El contrato se registra financiado. Si el cliente completa el pago requerido dentro del plazo acordado, puede acceder al precio de contado.</p>
+            <label id="pronto-plazo" class="field" hidden>Plazo del beneficio
+              <select id="pronto-dias"><option value="">Selecciona el plazo</option><option value="30">30 días calendario</option><option value="60">60 días calendario</option></select>
+            </label><p id="pronto-aviso" role="status"></p>
+          </section>
+
           <div id="validation-alert" class="validation-alert" role="alert" hidden></div>
           <button id="btn-confirmar-propuesta" type="button" class="button button-primary negotiation-field" hidden>Confirmar propuesta</button>
         </section>
@@ -520,6 +529,13 @@
         </div>
       </section>
 
+      <section id="client-pronto" class="early-benefit" hidden>
+        <h3>Beneficio de precio de contado por pronto pago</h3><p id="pp-intro"></p>
+        <dl><div><dt>Pago inicial</dt><dd id="pp-inicial"></dd></div><div><dt>Valor total con beneficio de contado</dt><dd id="pp-contado"></dd></div><div><dt>Saldo inicial para acceder al beneficio</dt><dd id="pp-saldo"></dd></div><div><dt>Fecha límite</dt><dd id="pp-limite"></dd></div></dl>
+        <div id="pp-mensual" hidden><h4>Importante sobre tu próxima mensualidad</h4><p>Tu contrato continúa activo. Deberás pagar normalmente tu próxima mensualidad en la fecha programada: <strong id="pp-proxima"></strong>.</p><p>El valor que pagues se descontará del saldo pendiente. Saldo estimado después de esa mensualidad: <strong id="pp-restante"></strong>.</p><p id="pp-otros"></p></div>
+        <p>Todos los abonos que efectivamente realices hasta la fecha límite cuentan para el beneficio. Si completas el saldo pendiente a más tardar en la fecha límite, tu programa conservará el precio de contado. Si no lo completas, tu contrato continuará normalmente bajo las condiciones y el valor del plan financiado originalmente seleccionado.</p>
+        <small>Beneficio aplicable sujeto al cumplimiento de las condiciones y fechas aquí indicadas.</small>
+      </section>
       <section id="client-additionals-section" class="client-additionals" hidden>
         <div class="client-section-heading">
           <span>Beneficio promocional</span>
@@ -721,7 +737,7 @@
       <li><strong>Gráficos de fondo:</strong> Activados.</li>
     </ul>
     <p class="print-browser-warning">
-      Los encabezados del navegador —fecha, título, dirección <code>URL</code> y número de página—
+      Los encabezados del navegador —fecha, título, dirección <code>file:///</code> y número de página—
       solamente desaparecen al desactivar <strong>Encabezados y pies de página</strong>.
     </p>
     <div class="print-guidance-actions">
@@ -736,12 +752,7 @@
   <script src="configuracion_jefes_ventas.js"></script>
   <script src="configuracion_adicionales.js"></script>
   <script src="configuracion_campanas_adicionales.js"></script>
-  <script src="configuracion_modelos_tarifarios.js"></script>
-  <script src="tarifas.js"></script>
-  <script src="tarifas_modelo_mp.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.14.0/html2pdf.bundle.min.js"
-    onerror="this.onerror=null;this.src='https://unpkg.com/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';"></script>
-  <script src="configuracion_registro.js"></script>
-  <script src="aplicacion.js?v=20260911-google-sites"></script>
+  <script src="tarifas_nacionales.js"></script>
+  <script src="aplicacion.js"></script>
 </body>
 </html>

@@ -3329,3 +3329,11 @@ body.cash-payment-mode .client-price-grid {
 .print-single-page .print-legal-notes > small {
   margin-top: 1mm;
 }
+
+.early-offer,.early-benefit{padding:1rem;border-left:4px solid #b71c37;background:#fff7f8;border-radius:.45rem;margin-block:.9rem;color:#322b30}
+.early-offer h4,.early-benefit h3,.early-benefit h4{margin:.15rem 0 .4rem}
+.early-benefit dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.5rem;margin:.6rem 0}
+.early-benefit dt{font-size:.82em}.early-benefit dd{font-weight:700;margin:0}
+.early-benefit p,.early-offer p{margin:.45em 0}.early-benefit p:empty,.early-offer p:empty{display:none}
+.print-sheet .early-benefit{font-size:9pt;padding:2.5mm;margin:1.5mm 0;line-height:1.18}
+.print-sheet .early-benefit dl{grid-template-columns:repeat(4,1fr);gap:2mm}

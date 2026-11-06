@@ -304,10 +304,75 @@
     }).sort(function (a, b) { return a.numero_pagos - b.numero_pagos; });
   }
 
+  function national(t) { return t && t.modelo_tarifario_id === "NACIONAL_V2"; }
+  function minimumInitial(t, n) { return Math.ceil(t.valor_total_oficial_cop / n); }
+  function nationalChoices(t, initial, cap, selected) {
+    var validCap = Number.isSafeInteger(cap) && cap > 0;
+    var validInitial = Number.isSafeInteger(initial) && initial > 0 && initial < t.valor_total_oficial_cop;
+    var choices = [];
+    for (var n = t.numero_pagos; n >= 2; n--) {
+      var min = minimumInitial(t, n), eligible = validInitial && initial >= min;
+      var amount = monthlyAmounts(t.valor_total_oficial_cop - (eligible ? initial : min), n - 1);
+      choices.push(Object.assign({numberOfPayments:n, remainingPayments:n-1, minimum:min,
+        eligible:eligible, viable:eligible && validCap && amount.requiredCapacityCop <= cap}, amount));
+    }
+    var viable = choices.filter(function(c){return c.viable;});
+    var rec = viable[viable.length-1], pick = choices.find(function(c){return c.remainingPayments===selected;});
+    return {choices:choices, recommendedPayments:rec && rec.numberOfPayments, selected:pick, capacityValid:validCap,
+      noViable:validCap && choices.some(function(c){return c.eligible;}) && !rec,
+      valid:!!(pick && pick.viable), recommendation:rec ? "Plazo más corto que se ajusta: "+rec.numberOfPayments+" pagos." : "",
+      message:!validCap ? "Indica la capacidad mensual del cliente." : !pick ? "Selecciona la cantidad real de pagos." :
+        !pick.eligible ? "Para "+pick.numberOfPayments+" pagos, la cuota inicial debe ser al menos "+formatCOP(pick.minimum)+"." :
+        !pick.viable ? "La mensualidad supera la capacidad indicada." : "", shorterSuggestion:""};
+  }
+
+  // El calendario contractual es la única fuente de fechas e importes para el beneficio.
+  function earlyPayment(t, cash, plan, days) {
+    if (!national(t) || t.numero_pagos<=1 || !cash || cash.numero_pagos!==1 ||
+        cash.plan_id!==t.plan_id || cash.idioma_id!==t.idioma_id || cash.condicion_id!==t.condicion_id ||
+        !plan || !plan.valid || (days!==30 && days!==60) || (days===60 && plan.initialCop<700000)) return null;
+    var total=cash.valor_total_oficial_cop, initial=plan.initialCop;
+    var deadline=addDaysISO(plan.rows[0].dueDate,days);
+    var due=plan.rows.slice(1).filter(function(r){return r.dueDate<=deadline;});
+    var balance=Math.max(0,total-initial);
+    return {days:days,deadline:deadline,price:total,initial:initial,balance:balance,first:plan.rows[1],
+      afterFirst:Math.max(0,balance-(due.length ? due[0].valueCop : 0)),due:due,
+      projected:Math.max(0,balance-due.reduce(function(sum,r){return sum+r.valueCop;},0))};
+  }
+  function benefitLines(b) {
+    if (!b) return [];
+    var lines=["Beneficio de precio de contado por pronto pago",
+      "Pago inicial: "+formatCOP(b.initial)+". Precio de contado: "+formatCOP(b.price)+".",
+      "Saldo inicial para acceder al beneficio: "+formatCOP(b.balance)+". Fecha límite: "+formatDateLong(b.deadline)+" ("+b.days+" días calendario)."];
+    if(b.days===60) lines.push("La próxima mensualidad debe pagarse normalmente: "+formatCOP(b.first.valueCop)+" el "+formatDateLong(b.first.dueDate)+". Si la pagas, el saldo estimado será "+formatCOP(b.afterFirst)+".");
+    if(b.due.length>1) lines.push("Si pagas todas las mensualidades programadas hasta la fecha límite, el saldo estimado será "+formatCOP(b.projected)+".");
+    lines.push("Si no completas el pronto pago a tiempo, tu contrato continúa con el valor y el calendario financiados.");
+    return lines;
+  }
+  function validateNationalCatalog(rows) {
+    var errors=[], groups=new Map();
+    (rows||[]).forEach(function(t){
+      var k=JSON.stringify([t.idioma_id,t.plan_id,t.condicion_id]);
+      if(!groups.has(k)) groups.set(k,[]);
+      groups.get(k).push(t);
+      if(!national(t)||!Number.isSafeInteger(t.valor_total_oficial_cop)||t.valor_total_oficial_cop<=0 ||
+         !Number.isSafeInteger(t.numero_pagos)||t.numero_pagos<1 ||
+         t.idioma_id==="FRANCES" && t.niveles_incluidos.includes("C1")) errors.push("Tarifa nacional inválida.");
+    });
+    groups.forEach(function(pair){if(pair.length!==2 || pair.filter(function(t){return t.numero_pagos===1;}).length!==1) errors.push("Modalidades incompletas.");});
+    if(!rows || rows.length!==200) errors.push("Catálogo nacional incompleto.");
+    return {valid:!errors.length,errors:errors};
+  }
+
   function flexiblePaymentOptions(tariff, initialCop, catalog) {
     var result = { options: [], shorterPlan: null, warning: "", comparison: "NO_ALTERNATIVE",
       minRemainingPayments: 0, maxRemainingPayments: 0 };
     if (!tariff || tariff.numero_pagos === 1) { return result; }
+    if (national(tariff)) {
+      result.minRemainingPayments=1; result.maxRemainingPayments=tariff.numero_pagos-1;
+      for(var i=result.maxRemainingPayments;i>=1;i--) result.options.push(i);
+      return result;
+    }
     var shorter = officialPaymentAlternatives(tariff, catalog).filter(function (candidate) {
       return candidate.numero_pagos < tariff.numero_pagos;
     }).pop() || null;
@@ -356,6 +421,7 @@
   // Información de negociación interna. El calendario contractual sigue teniendo
   // una única fuente en buildPaymentPlan y comparte exactamente su redondeo.
   function paymentCapacityOptions(tariff, initialCop, capacityCop, remainingPayments, catalog) {
+    if (national(tariff) && tariff.numero_pagos>1) return nationalChoices(tariff,initialCop,capacityCop,remainingPayments);
     var structure = flexiblePaymentOptions(tariff, initialCop, catalog);
     var result = { valid: false, choices: [], selected: null, recommendedPayments: null,
       recommendedRemainingPayments: null, message: "", recommendation: "", shorterSuggestion: "",
@@ -506,7 +572,7 @@
       result.errors.push("Ingresa una cuota inicial propuesta en pesos enteros.");
       return result;
     }
-    if (proposedInitial < tariff.cuota_inicial_minima_cop) {
+    if (!national(tariff) && proposedInitial < tariff.cuota_inicial_minima_cop) {
       result.errors.push("El valor ingresado no cumple las condiciones autorizadas para esta alternativa de pago. Revisa la cuota inicial propuesta.");
       return result;
     }
@@ -527,6 +593,10 @@
     var flexible = flexiblePaymentOptions(tariff, proposedInitial, options && options.catalog);
     if (!Number.isSafeInteger(remaining) || flexible.options.indexOf(remaining) < 0) {
       result.errors.push("Selecciona una cantidad válida de mensualidades para la cuota inicial propuesta.");
+      return result;
+    }
+    if (national(tariff) && proposedInitial < minimumInitial(tariff,remaining+1)) {
+      result.errors.push("Para "+(remaining+1)+" pagos, la cuota inicial debe ser al menos "+formatCOP(minimumInitial(tariff,remaining+1))+".");
       return result;
     }
     var balance = tariff.valor_total_oficial_cop - proposedInitial;
@@ -561,7 +631,7 @@
     result.valid = runningBalance === 0 && sum === tariff.valor_total_oficial_cop;
     result.rows = rows;
     result.initialCop = proposedInitial;
-    result.additionalInitialCop = proposedInitial - tariff.cuota_inicial_minima_cop;
+    result.additionalInitialCop = proposedInitial - (national(tariff) ? minimumInitial(tariff,remaining+1) : tariff.cuota_inicial_minima_cop);
     result.pendingBalanceCop = balance;
     result.remainingPayments = remaining;
     result.numberOfPayments = rows.length;
@@ -642,14 +712,14 @@
     }, 0);
   }
 
-  function printDistributionRespectsSectionOrder(distribution, bonusFirstPageCount, totalBonusCards) {
+  function printDistributionRespectsSectionOrder(distribution, bonusFirstPageCount, totalBonusCards, hasEarlyBenefit) {
     if (!Array.isArray(distribution) || !distribution.length) {
       return false;
     }
     var firstPageCount = Math.max(0, Number(bonusFirstPageCount || 0));
     var totalCards = Math.max(0, Number(totalBonusCards || 0));
     if (totalCards === 0) {
-      return distribution[0] > 0;
+      return distribution[0] > 0 || Boolean(hasEarlyBenefit && distribution.length > 1);
     }
     if (firstPageCount >= totalCards) {
       return true;
@@ -1108,6 +1178,7 @@
     }
 
     lines.push("");
+    lines.push.apply(lines,benefitLines(data.earlyPayment));
     if (quoteExpired) {
       lines.push("Referencia de cotización: " + String(data.reference || "—"));
       lines.push("");
@@ -1248,6 +1319,7 @@
     }
 
     lines.push("");
+    lines.push.apply(lines,benefitLines(data.earlyPayment));
     if (data.quoteExpired) {
       lines.push("La vigencia de esta cotización finalizó. Si deseas, responde este correo para preparar una propuesta actualizada.");
     } else if (data.benefitsExpired) {
@@ -1721,7 +1793,7 @@
     return { valid: errors.length === 0, errors: errors };
   }
 
-  var CORE = {
+  var CORE = { earlyPayment:earlyPayment, minimumInitial:minimumInitial, validateNationalCatalog:validateNationalCatalog,
     VIGENCIA_COTIZACION_HORAS: VIGENCIA_COTIZACION_HORAS,
     TIME_ZONE: TIME_ZONE,
     DISCLAIMER: DISCLAIMER,
@@ -1822,7 +1894,8 @@
     return;
   }
 
-  var institutionalTariffs = global.SMART_TARIFAS || [];
+  var nationalMode = !!document.querySelector("script[src=\"tarifas_nacionales.js\"]");
+  var institutionalTariffs = nationalMode ? (global.SMART_NACIONAL || []) : global.SMART_TARIFAS || [];
   var mpTariffs = global.SMART_TARIFAS_MP || [];
   var tariffMeta = global.SMART_TARIFAS_META || {};
   var mpTariffMeta = global.SMART_TARIFAS_MP_META || {};
@@ -1839,8 +1912,12 @@
   var salesManagers = global.SMART_JEFES_VENTAS || [];
   var salesManagerMeta = global.SMART_JEFES_VENTAS_META || {};
   var salesManagerValidation = global.SMART_JEFES_VENTAS_VALIDACION || { valida: false, errores: ["No se cargó la configuración de jefes de ventas."] };
-  var tariffValidation = validateTariffCatalog(institutionalTariffs);
-  var mpTariffValidation = validateMPTariffCatalog(mpTariffs);
+  if(nationalMode) {
+    tariffModels=[{modelo_tarifario_id:"NACIONAL_V2",activo:true,nombre_panel:"Tarifa nacional Instituto",aplicacion_nacional:true}];
+    tariffModelValidation={valida:true}; tariffMeta={version:"Nacional 2026 V2"};
+  }
+  var tariffValidation = nationalMode ? validateNationalCatalog(institutionalTariffs) : validateTariffCatalog(institutionalTariffs);
+  var mpTariffValidation = nationalMode ? {valid:true,errors:[]} : validateMPTariffCatalog(mpTariffs);
   var catalogsReady = Boolean(siteValidation.valida && tariffValidation.valid && mpTariffValidation.valid &&
     tariffModelValidation.valida && additionalValidation.valida && campaignValidation.valida);
   global.SMART_CONFIG_DIAGNOSTICS = Object.freeze({
@@ -2066,6 +2143,7 @@
   }
 
   function currentTariffCatalog() {
+    if(nationalMode) return institutionalTariffs;
     if (currentModelId() === "PORTAFOLIO_INSTITUCIONAL") {
       return institutionalTariffs;
     }
@@ -2404,7 +2482,7 @@
   function paymentOptionLabel(number) {
     return number === 1
       ? "Pago de contado"
-      : "Plan tarifario · Hasta " + number + " pagos";
+      : (nationalMode ? "Financiado · Hasta " : "Plan tarifario · Hasta ") + number + " pagos";
   }
 
   function populatePaymentOptions(preferred) {
@@ -2806,6 +2884,7 @@
     currentNegotiation = paymentCapacityOptions(currentTariff, initial,
       parseCapacityInput(elements["capacidad-mensual"].value), previous);
     var lowest = currentNegotiation.choices.reduce(function (best, choice) {
+      if(national(currentTariff) && !choice.eligible) return best;
       return !best || choice.requiredCapacityCop < best.requiredCapacityCop ? choice : best;
     }, null);
     currentNegotiation.lowestMonthlyChoice = lowest;
@@ -2813,13 +2892,20 @@
     select.add(new Option("Selecciona los pagos reales del acuerdo", ""));
     currentNegotiation.choices.forEach(function (choice) {
       var label = choice.numberOfPayments + " pagos · " + choice.remainingPayments + " mensualidades · " + formatCOP(choice.regularMonthlyCop) + " aprox.";
-      label += !choice.viable ? " · Supera capacidad" :
+      if(national(currentTariff) && !choice.eligible) label=choice.numberOfPayments+" pagos · Inicial mínima "+formatCOP(choice.minimum);
+      else if(national(currentTariff) && !currentNegotiation.capacityValid) label+=" · Indica capacidad";
+      else label += !choice.viable ? " · Supera capacidad" :
         (choice.numberOfPayments === currentNegotiation.recommendedPayments ? " · Se ajusta · RECOMENDADO" : " · Se ajusta");
       if (currentNegotiation.noViable && choice === lowest) { label += " · MENOR MENSUALIDAD"; }
       select.add(new Option(label, String(choice.remainingPayments)));
     });
     // La recomendación informa; únicamente una selección o aceptación expresa fija el acuerdo.
     select.value = currentNegotiation.selected ? String(previous) : "";
+    if(national(currentTariff)) {
+      var selected=currentNegotiation.selected;
+      elements["cuota-propuesta"].closest("label").querySelector("small").textContent=selected ?
+        "Inicial mínima para "+selected.numberOfPayments+" pagos: "+formatCOP(selected.minimum)+"." : "Selecciona un plazo para conocer la inicial mínima.";
+    }
     select.disabled = !currentNegotiation.choices.length;
     elements["plazo-flexible"].hidden = !currentNegotiation.choices.length;
     elements["plazo-advertencia"].textContent = result.warning;
@@ -2832,10 +2918,48 @@
     elements["capacidad-mensual"].setAttribute("aria-invalid", String(Boolean(result.options.length && !internal.capacityValid)));
   }
 
+  function earlyOn(){return !!(byId("pronto-activo") && byId("pronto-activo").checked);}
+  function resetEarly(){
+    if(!byId("pronto-activo"))return;
+    byId("pronto-activo").checked=false; byId("pronto-dias").value=""; byId("pronto-aviso").textContent="";
+    byId("oferta-pronto").hidden=true; byId("client-pronto").hidden=true;
+  }
+  function currentEarly(){
+    if(!earlyOn() || !national(currentTariff)) return null;
+    var cash=officialPaymentAlternatives(currentTariff,institutionalTariffs).find(function(t){return t.numero_pagos===1;});
+    return earlyPayment(currentTariff,cash,currentCalculation,Number(byId("pronto-dias").value));
+  }
+  function renderEarly(){
+    if(!byId("oferta-pronto"))return;
+    var section=byId("oferta-pronto"), client=byId("client-pronto"), select=byId("pronto-dias"), note=byId("pronto-aviso");
+    section.hidden=!(national(currentTariff)&&currentTariff.numero_pagos>1);
+    client.hidden=true;
+    if(section.hidden)return;
+    byId("pronto-plazo").hidden=!earlyOn();
+    var can60=parseCOPInput(elements["cuota-propuesta"].value)>=700000;
+    if(select.value==="60" && !can60){select.value="";note.textContent="La opción de 60 días requiere una cuota inicial de $700.000 o más. Selecciona 30 días.";}
+    select.options[2].hidden=!can60;select.options[2].disabled=!can60;
+    if(select.value || !earlyOn())note.textContent="";
+    if(earlyOn() && !select.value && !note.textContent)note.textContent="Selecciona un plazo para ofrecer el beneficio.";
+    var b=currentEarly();
+    if(!b)return;
+    client.hidden=false;
+    function put(id,value){byId(id).textContent=value;}
+    put("pp-intro","Tu matrícula se realizará inicialmente bajo la modalidad financiada. "+(b.days===60?"Gracias al valor de tu cuota inicial, puedes":"Puedes")+" acceder al precio de contado si completas el pago requerido dentro de los próximos "+b.days+" días calendario.");
+    put("pp-inicial",formatCOP(b.initial));put("pp-contado",formatCOP(b.price));put("pp-saldo",formatCOP(b.balance));put("pp-limite",formatDateLong(b.deadline));
+    byId("pp-mensual").hidden=b.days!==60;
+    if(b.days===60){
+      put("pp-proxima",formatCOP(b.first.valueCop)+" · "+formatDateLong(b.first.dueDate));
+      put("pp-restante",formatCOP(b.afterFirst));
+      put("pp-otros",b.due.length>1 ? "Si también pagas la siguiente mensualidad programada dentro del plazo, el saldo estimado será "+formatCOP(b.projected)+"." : "");
+    }
+  }
+
   function currentAgreementSignature() {
     return JSON.stringify([elements["numero-pagos"].value, elements["cuota-propuesta"].value,
       elements["capacidad-mensual"].value, elements["mensualidades-propuestas"].value,
-      elements["fecha-acreditacion-pago-inicial-estimada"].value, elements["fecha-primera-cuota"].value]);
+      elements["fecha-acreditacion-pago-inicial-estimada"].value, elements["fecha-primera-cuota"].value,
+      earlyOn(), earlyOn() ? byId("pronto-dias").value : ""]);
   }
 
   function renderAgreementAction() {
@@ -2891,6 +3015,7 @@
       return;
     }
     var meta = currentModelId() === "PORTAFOLIO_INSTITUCIONAL" ? tariffMeta : mpTariffMeta;
+    if(nationalMode){setBoundText("tarifas-actualizadas","Tarifa nacional Instituto · 2026 V2");return;}
     setBoundText("tarifas-actualizadas", "Tarifas actualizadas el: " + (meta.actualizado_en_mostrado || "sin fecha"));
   }
 
@@ -2963,6 +3088,7 @@
   }
 
   function clearCalculatedProposal() {
+    resetEarly();
     currentTariff = null;
     currentCalculation = null;
     currentAgreementConfirmation = null;
@@ -3057,6 +3183,7 @@
       return;
     }
     if (resetInitial) {
+      resetEarly();
       setMoneyInput("");
       elements["capacidad-mensual"].value = "";
       elements["mensualidades-propuestas"].value = "";
@@ -3087,7 +3214,7 @@
     if (errors.length && !pendingSelection && !missingCapacity) {
       showValidation(errors);
     } else if (negotiation && !negotiation.valid) {
-      showValidation(negotiation.noViable
+      showValidation(negotiation.noViable && (!negotiation.selected || negotiation.selected.eligible!==false)
         ? "Ninguna alternativa se ajusta todavía a la capacidad indicada. La opción de menor mensualidad es de " + negotiation.lowestMonthlyChoice.numberOfPayments + " pagos. Selecciona una alternativa para revisar y confirmar el importe que el cliente acepta, o ajusta la cuota inicial."
         : negotiation.message);
     } else if (currentCalculation && currentCalculation.valid && negotiation && negotiation.valid && currentCalculation.remainingPayments) {
@@ -3138,7 +3265,11 @@
     });
     renderFinanceStatus();
     renderProposal();
-    return currentCalculation.valid && currentNegotiation.valid;
+    if (earlyOn() && !byId("pronto-dias").value) {
+      showValidation(byId("pronto-aviso").textContent || "Selecciona un plazo válido para el beneficio.");
+      return false;
+    }
+    return currentCalculation.valid && currentNegotiation.valid && (!earlyOn() || !!currentEarly());
   }
 
   function renderPaymentRows(target, rows, compact) {
@@ -3171,6 +3302,7 @@
   }
 
   function renderProposal() {
+    renderEarly();
     renderAgreementAction();
     if (!currentTariff) {
       return;
@@ -3207,7 +3339,9 @@
     setBoundText("mensualidades-resumen", isCash ? "" : (calculationValid ? calculation.remainingPayments + " mensualidades de aproximadamente" : "Mensualidades por calcular"));
     setBoundText("ultima-cuota", calculationValid ? formatCOP(calculation.lastMonthlyCop) : "—");
     setBoundText("valor-hora", formatCOP(currentTariff.valor_por_hora_mostrado_cop));
-    setBoundText("intensidad", formatInteger(currentTariff.maxima_intensidad_mensual_mostrada));
+    setBoundText("intensidad", national(currentTariff)
+      ? (Math.floor(currentTariff.maxima_intensidad_mensual_raw * 100) / 100).toLocaleString("es-CO")
+      : formatInteger(currentTariff.maxima_intensidad_mensual_mostrada));
     setBoundText("numero-pagos-resumen", isCash ? "1 pago" : (calculationValid ? calculation.numberOfPayments + " pagos acordados" : "—"));
     setBoundText("fecha-primer-pago", formatDateLong(paymentDate));
     setBoundText("fecha-matricula-estimada", formatDateLong(elements["fecha-matricula"].value));
@@ -3296,6 +3430,7 @@
       return;
     }
     currentAgreementConfirmation = null;
+    quote.earlyPayment = null;
     preparedWhatsAppMessage = "";
     if (quote.status === "VIGENTE" || quote.status === "VENCIDA") {
       quote.status = "MODIFICADA";
@@ -3535,6 +3670,7 @@
     quote.enrollmentDate = elements["fecha-matricula"].value;
     quote.salesManagerId = elements["jefe-ventas"].value || "";
     quote.agreementSignature = currentAgreementSignature();
+    quote.earlyPayment=currentEarly();
     quote.reference = createQuoteReference(now);
     var campaign = activeAdditionalCampaign();
     quote.campaignId = campaign ? campaign.campana_id : null;
@@ -3566,63 +3702,7 @@
     preparedWhatsAppMessage = "";
     renderFinanceStatus();
     renderProposal();
-    registerGeneratedQuote();
     showToast(ensureFinalPeriod("Cotización generada. Vigente hasta el " + formatBogotaDateTime(quote.expiresAt)));
-  }
-
-  function registrationPayload() {
-    var share = currentWhatsAppMessageData(DEFAULT_SHARE_CONTEXT);
-    var trace = quote.tariffTrace || {};
-    var calculation = currentCalculation || {};
-    return {
-      id_cotizacion: quote.reference,
-      fecha_generacion: quote.generatedAt,
-      fecha_vencimiento: quote.expiresAt,
-      nombre_cliente: share.clientName,
-      celular_cliente: share.clientPhoneNormalized || "",
-      correo_cliente: share.clientEmail || "",
-      nombre_comercial: share.advisorName,
-      correo_comercial: "",
-      nombre_jefe_ventas: share.managerName || "",
-      correo_jefe_ventas: share.managerEmail || "",
-      sede: share.siteName,
-      idioma: share.languageName,
-      plan_tarifario: trace.modelo_tarifario_id || "",
-      modalidad: trace.modalidad_cliente || "",
-      programa: share.programName,
-      porcentaje_descuento: currentTariff ? Number(currentTariff.porcentaje_descuento_exacto || 0) : 0,
-      valor_descuento: share.savingsCop || 0,
-      valor_final_contrato: share.totalContractCop || 0,
-      forma_pago: share.isCash ? "CONTADO" : "FINANCIADO",
-      valor_cuota_inicial: share.initialCop || 0,
-      saldo_financiar: calculation.pendingBalanceCop || 0,
-      numero_cuotas: share.numberOfPayments || 1,
-      valor_cuotas_posteriores: share.regularMonthlyCop || 0,
-      valor_ultima_cuota: share.lastMonthlyCop || 0,
-      fecha_primera_cuota: elements["fecha-primera-cuota"].value || "",
-      beneficios: share.additionals || [],
-      estado: quote.status,
-      fecha_matricula: quote.enrollmentDate || "",
-      version_modelo: trace.modelo_tarifario_version || "",
-      fecha_registro: new Date().toISOString()
-    };
-  }
-
-  function registerGeneratedQuote() {
-    var config = global.SMART_REGISTRO_COTIZACIONES || {};
-    var endpoint = String(config.endpoint || "").trim();
-    if (!config.activo || !endpoint || endpoint.indexOf("__APPS_SCRIPT_") === 0) {
-      return false;
-    }
-    try {
-      var body = JSON.stringify(registrationPayload());
-      if (global.navigator && typeof global.navigator.sendBeacon === "function") {
-        return global.navigator.sendBeacon(endpoint, body);
-      }
-    } catch (error) {
-      console.warn("No fue posible registrar la cotización.", error);
-    }
-    return false;
   }
 
   function ensureCurrentQuote() {
@@ -3698,6 +3778,7 @@
     var formattedPhone = normalizedClientPhone();
     return {
       contextId: normalizeShareContext(contextId),
+      earlyPayment:quote.earlyPayment,
       clientName: elements.cliente.value.trim(),
       advisorName: elements.asesor.value.trim(),
       clientPhoneNormalized: formattedPhone,
@@ -4345,6 +4426,7 @@
     }
 
     lines.push("");
+    lines.push.apply(lines,benefitLines(quote.earlyPayment));
     lines.push("RESUMEN ECONÓMICO");
     lines.push("Valor de lista: " + formatCOP(currentTariff.valor_full_oficial_cop));
     lines.push("Descuento efectivo: " + formatPercentExact(currentTariff.porcentaje_descuento_exacto));
@@ -4543,7 +4625,8 @@
       "#client-view .client-greeting",
       "#client-view .client-program",
       "#client-view .client-payment-summary",
-      "#client-view .client-price-grid"
+      "#client-view .client-price-grid",
+      "#client-view #client-pronto"
     ];
 
   var PRINT_POST_BONUSES_SELECTORS = [
@@ -4557,6 +4640,7 @@
     "PROGRAM",
     "PAYMENT_HIGHLIGHT",
     "ECONOMIC_SUMMARY",
+    "EARLY_PAYMENT",
     "BONUSES",
     "BONUSES_TOTAL",
     "MONTHLY_REDUCTION_MESSAGE",
@@ -4572,6 +4656,7 @@
     "#client-view .client-program": "PROGRAM",
     "#client-view .client-payment-summary": "PAYMENT_HIGHLIGHT",
     "#client-view .client-price-grid": "ECONOMIC_SUMMARY",
+    "#client-view #client-pronto": "EARLY_PAYMENT",
     "#client-view #client-additionals-total-section": "BONUSES_TOTAL",
     "#client-view #client-commercial-message": "MONTHLY_REDUCTION_MESSAGE"
   };
@@ -4857,7 +4942,7 @@
     }
 
     if ((remainingBonusCards > 0 && totalPages < 2) ||
-        !printDistributionRespectsSectionOrder(distribution, bonusFirstPageCount, totalBonusCards)) {
+        !printDistributionRespectsSectionOrder(distribution, bonusFirstPageCount, totalBonusCards, !!quote.earlyPayment)) {
       return [];
     }
 
@@ -5063,6 +5148,7 @@
       if (child.classList.contains("client-greeting")) { return "cliente"; }
       if (child.classList.contains("client-program")) { return "programa"; }
       if (child.classList.contains("client-price-grid")) { return "resumen_economico"; }
+      if (child.classList.contains("early-benefit")) { return "pronto_pago"; }
       if (child.classList.contains("client-payment-summary")) { return "plan_pago"; }
       if (child.classList.contains("client-additionals")) { return "adicionales"; }
       if (child.classList.contains("client-additionals-total")) { return "total_adicionales"; }
@@ -5125,7 +5211,7 @@
       bonusFirstPageCount: Number(bonusFirstPageCount || 0),
       totalBonusCards: totalBonusCards
     };
-    if (!printDistributionRespectsSectionOrder(layout.distribution, layout.bonusFirstPageCount, totalBonusCards)) {
+    if (!printDistributionRespectsSectionOrder(layout.distribution, layout.bonusFirstPageCount, totalBonusCards, !!quote.earlyPayment)) {
       return null;
     }
     var sheets = renderPrintDistribution(session, layout);
@@ -5214,7 +5300,7 @@
         if (proposal[pageIndex + 1] < 3) {
           break;
         }
-        if (!printDistributionRespectsSectionOrder(proposal, current.bonusFirstPageCount, current.totalBonusCards)) {
+        if (!printDistributionRespectsSectionOrder(proposal, current.bonusFirstPageCount, current.totalBonusCards, !!quote.earlyPayment)) {
           reason = "La secuencia comercial impide colocar pagos antes de los adicionales bonificados.";
           break;
         }
@@ -5245,7 +5331,7 @@
       var valid = [];
       for (var index = 0; index < distributions.length; index += 1) {
         for (var placementIndex = 0; placementIndex < bonusPlacements.length; placementIndex += 1) {
-          if (!printDistributionRespectsSectionOrder(distributions[index], bonusPlacements[placementIndex], printBonusCards().length)) {
+          if (!printDistributionRespectsSectionOrder(distributions[index], bonusPlacements[placementIndex], printBonusCards().length, !!quote.earlyPayment)) {
             continue;
           }
           var measured = await measurePrintDistribution(session, distributions[index], bonusPlacements[placementIndex]);
@@ -5542,78 +5628,6 @@
     }
   }
 
-  async function downloadPreparedDocumentAsPdf(session, fileName) {
-    if (typeof global.html2pdf !== "function") {
-      throw new Error("MOTOR_PDF_NO_DISPONIBLE");
-    }
-    var host = elements["print-document"];
-    var previousHostStyle = host.getAttribute("style");
-    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
-    var previousSheetStyles = sheets.map(function (sheet) {
-      return sheet.getAttribute("style");
-    });
-    if (!sheets.length) {
-      throw new Error("DOCUMENTO_PDF_VACIO");
-    }
-
-    host.classList.add("is-measuring", "print-active");
-    host.setAttribute("aria-hidden", "false");
-    host.style.left = "0";
-    host.style.zIndex = "-1000";
-    host.style.pointerEvents = "none";
-    sheets.forEach(function (sheet) {
-      sheet.style.setProperty("break-before", "auto", "important");
-      sheet.style.setProperty("break-after", "auto", "important");
-      sheet.style.setProperty("page-break-before", "auto", "important");
-      sheet.style.setProperty("page-break-after", "auto", "important");
-      sheet.style.setProperty("height", "296.8mm", "important");
-    });
-
-    try {
-      var pdfOptions = {
-        margin: 0,
-        filename: fileName || "Cotizacion_Smart.pdf",
-        image: { type: "jpeg", quality: 0.96 },
-        html2canvas: {
-          scale: 1.35,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: 794
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
-      };
-      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
-      var pdf = await firstWorker.get("pdf");
-      while (pdf.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.getNumberOfPages());
-      }
-      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
-        var canvas = await global.html2pdf()
-          .set(pdfOptions)
-          .from(sheets[sheetIndex])
-          .toCanvas()
-          .get("canvas");
-        pdf.addPage("a4", "portrait");
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
-      }
-      pdf.save(pdfOptions.filename);
-    } finally {
-      sheets.forEach(function (sheet, index) {
-        if (previousSheetStyles[index] === null) {
-          sheet.removeAttribute("style");
-        } else {
-          sheet.setAttribute("style", previousSheetStyles[index]);
-        }
-      });
-      if (previousHostStyle === null) {
-        host.removeAttribute("style");
-      } else {
-        host.setAttribute("style", previousHostStyle);
-      }
-    }
-  }
-
   async function continuePrinting() {
     if (isPrinting) {
       showToast("Ya existe una impresión en preparación. Espera a que finalice.");
@@ -5641,18 +5655,7 @@
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
       updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
-      showToast("Generando y descargando el PDF...");
-      try {
-        await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
-        cleanupPrintSession("descarga_pdf_directa");
-        showToast("PDF descargado correctamente.");
-      } catch (error) {
-        cleanupPrintSession("descarga_pdf_fallida");
-        showToast(error && error.message === "MOTOR_PDF_NO_DISPONIBLE"
-          ? "No cargó el generador de PDF. Actualiza la página e inténtalo nuevamente."
-          : "No fue posible descargar el PDF. Reintenta la descarga.");
-      }
-      return;
+      showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
     }
     global.setTimeout(function () {
       if (!activePrintSession || activePrintSession.id !== session.id) {
@@ -5685,10 +5688,6 @@
     pendingPrintFileName = saveAsPdf
       ? (suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId)))
       : "";
-    if (saveAsPdf) {
-      continuePrinting();
-      return;
-    }
     if (typeof elements["print-guidance-dialog"].showModal === "function") {
       elements["print-guidance-dialog"].showModal();
     } else {
@@ -5766,6 +5765,10 @@
   }
 
   function bindEvents() {
+    if(byId("pronto-activo")) {
+      byId("pronto-activo").addEventListener("change",function(){markModified(); byId("pronto-dias").value=earlyOn()?"30":""; calculateAndRender();});
+      byId("pronto-dias").addEventListener("change",function(){markModified(); calculateAndRender();});
+    }
     elements.idioma.addEventListener("change", handleLanguageChange);
     elements["ciudad-zona"].addEventListener("change", handleCityZoneChange);
     elements.sede.addEventListener("change", handleSiteChange);
