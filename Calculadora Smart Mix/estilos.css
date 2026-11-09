@@ -3342,3 +3342,13 @@ body.cash-payment-mode .client-price-grid {
 .commercial-warning { border-left: 3px solid #a45a00; padding: 12px 14px; background: #fff7e8; color: #754000; font-size: 13px; line-height: 1.5; }
 .commercial-warning.strong-warning { border-left-color: #b42318; background: #fff1f0; color: #8c2119; }
 @media (max-width: 460px) { .mix-official-plan { overflow-wrap: anywhere; } }
+
+/* Beneficio V2 integrado en la propuesta y la plantilla de impresión vigente. */
+.early-payment-panel, .early-payment-summary { padding: 18px; margin: 18px 0; border: 1px solid #d5dfeb; border-radius: 14px; background: #f5f8fc; }
+.early-payment-panel h3, .early-payment-summary h3 { margin: 0 0 12px; font-size: 1rem; color: #153c6b; }
+.early-payment-summary p { margin: 8px 0; line-height: 1.45; }
+#early-payment-error:empty { display: none; }
+/* Mismo tamaño durante la medición DOM y la impresión: evita saltos artificiales. */
+.print-sheet .early-payment-summary { padding: 9px 12px; margin: 8px 0; font-size: 8.5pt; break-inside: avoid; }
+.print-sheet .early-payment-summary p { margin: 4px 0; }
+.print-sheet .early-payment-summary h3 { font-size: 10pt; }

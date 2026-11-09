@@ -13,50 +13,43 @@
       return item.plan_id === tariff.plan_id && item.condicion_id === tariff.condicion_id;
     }).sort(function (a, b) { return a.numero_pagos - b.numero_pagos; });
   }
+  function minimumInitial(tariff, payments) {
+    if (!tariff || !Number.isSafeInteger(payments) || payments < 2 || payments > tariff.numero_pagos) { return null; }
+    return Number((BigInt(tariff.valor_total_oficial_cop) + BigInt(payments) - 1n) / BigInt(payments));
+  }
   function flexibleTerm(tariff, initial, catalog) {
     var result = { valid: false, options: [], warning: "", error: "" };
-    if (!tariff || !(catalog || []).includes(tariff)) {
-      result.error = "Selecciona un plan oficial disponible.";
-      return result;
-    }
+    if (!tariff || !(catalog || []).includes(tariff)) { result.error = "Selecciona un plan oficial disponible."; return result; }
     if (tariff.numero_pagos === 1) { result.valid = true; return result; }
-    if (!Number.isSafeInteger(initial) || initial < tariff.cuota_inicial_minima_cop) {
-      result.error = "La cuota inicial propuesta no cumple las condiciones autorizadas para este plan.";
-      return result;
-    }
-    var plans = alternatives(tariff, catalog);
-    var shorter = plans.filter(function (plan) { return plan.numero_pagos < tariff.numero_pagos; });
-    var previous = shorter[shorter.length - 1];
-    if (previous && previous.valor_total_oficial_cop < tariff.valor_total_oficial_cop &&
-        BigInt(initial) * 10n >= BigInt(previous.valor_total_oficial_cop) * 9n) {
-      result.warning = initial >= previous.valor_total_oficial_cop
-        ? "La cuota inicial propuesta alcanza o supera el valor de la alternativa oficial de menor plazo. Revisa esa alternativa antes de continuar; el plan seleccionado no se cambia automáticamente."
-        : "La cuota inicial propuesta se acerca al valor de una alternativa oficial de menor plazo y menor precio. Conviene evaluarla; el plan seleccionado no se cambia automáticamente.";
-      result.warningLevel = initial >= previous.valor_total_oficial_cop ? "strong" : "notice";
-    }
-    if (initial >= tariff.valor_total_oficial_cop) {
-      result.error = "Revisa una alternativa oficial de contado para pagar el valor completo.";
-      return result;
-    }
-    var longest = plans[plans.length - 1] === tariff;
-    // Colaborador: S + 1 .. P pagos totales, es decir S .. P - 1 mensualidades.
-    // Las otras condiciones conservan su comparación de mensualidades aprobada.
-    var structuralBoundary = tariff.condicion_id === "COLABORADOR";
-    var compare = !structuralBoundary && longest && previous && previous.numero_pagos > 1;
-    var minimum = structuralBoundary ? (previous ? previous.numero_pagos : 1) : (tariff.numero_pagos === 2 ? 1 : 2);
-    var previousBalance = compare ? previous.valor_total_oficial_cop - initial : 0;
-    for (var months = tariff.numero_pagos - 1; months >= minimum; months -= 1) {
-      var monthly = roundDivide(tariff.valor_total_oficial_cop - initial, months);
-      if (compare && (previousBalance <= 0 || monthly >= roundDivide(previousBalance, previous.numero_pagos - 1))) {
-        continue;
-      }
-      result.options.push(months);
-    }
-    result.valid = result.options.length > 0;
-    if (!result.valid) {
-      result.error = "Con esta cuota inicial, evalúa el plan oficial de menor plazo. No hay mensualidades disponibles para mantener esta alternativa.";
-    }
+    for (var months = tariff.numero_pagos - 1; months >= 1; months -= 1) { result.options.push(months); }
+    result.valid = Number.isSafeInteger(initial) && initial >= minimumInitial(tariff, tariff.numero_pagos) && initial < tariff.valor_total_oficial_cop;
+    if (!result.valid) { result.error = "La cuota inicial debe cumplir el mínimo del plazo elegido y ser menor que el valor financiado."; }
     return result;
+  }
+  // Proyección condicional: nunca registra pagos como realizados ni altera el calendario financiado.
+  function earlyPayment(tariff, calculation, days, catalog) {
+    var result = { valid: false, error: "" };
+    if (!tariff || tariff.numero_pagos === 1 || !calculation || !calculation.valid) { result.error = "Primero configura un acuerdo financiado válido."; return result; }
+    if (![30,60].includes(days)) { result.error = "Selecciona un plazo de 30 o 60 días para Pronto Pago."; return result; }
+    if (days === 60 && calculation.initialCop < 700000) { result.error = "La opción de 60 días requiere una cuota inicial de $700.000 o más."; return result; }
+    var cash = alternatives(tariff, catalog).find(function(t) { return t.numero_pagos === 1; });
+    if (!cash) { result.error = "No se encontró el precio de contado correspondiente."; return result; }
+    if (calculation.initialCop > cash.valor_total_oficial_cop) { result.error = "Para ofrecer Pronto Pago, la cuota inicial no puede superar el precio de contado. Revisa el acuerdo antes de activar el beneficio."; return result; }
+    var base = calculation.rows[0].dueDate;
+    var date = new Date(base + "T12:00:00Z"); date.setUTCDate(date.getUTCDate() + days);
+    var deadline = date.toISOString().slice(0,10), balance = cash.valor_total_oficial_cop - calculation.initialCop;
+    var projections = [], completed = balance === 0 ? base : null;
+    // Solo 60 días descuenta mensualidades proyectadas. A 30 días se completa el saldo directamente.
+    (days === 60 ? calculation.rows.slice(1) : []).forEach(function(row) {
+      if (row.dueDate > deadline || balance <= 0) { return; }
+      var amount = Math.min(balance, row.valueCop); balance -= amount;
+      projections.push({ date: row.dueDate, normalCop: row.valueCop, amountCop: amount, balanceCop: balance, completes: balance === 0 });
+      if (balance === 0) { completed = row.dueDate; }
+    });
+    return { valid: true, days: days, baseDate: base, deadline: deadline, initialCop: calculation.initialCop,
+      cashCop: cash.valor_total_oficial_cop, initialBalanceCop: cash.valor_total_oficial_cop - calculation.initialCop,
+      projections: projections, remainingCop: balance, completionDate: completed,
+      projectedTotalCop: calculation.initialCop + projections.reduce(function(sum,p) { return sum + p.amountCop; },0) + balance };
   }
   // La conciliación es compartida por el calendario y la referencia de negociación.
   function monthlyAgreement(balance, months) {
@@ -68,10 +61,12 @@
   function negotiationOptions(tariff, initial, capacity, catalog) {
     var flex = flexibleTerm(tariff, initial, catalog);
     var hasCapacity = Number.isSafeInteger(capacity) && capacity > 0;
-    var options = flex.options.map(function(months) {
+    var options = (flex.valid ? flex.options : []).map(function(months) {
       var amounts = monthlyAgreement(tariff.valor_total_oficial_cop - initial, months);
       return { months: months, payments: months + 1, monthly: amounts.regular,
-        last: amounts.last, required: amounts.required, fits: hasCapacity ? amounts.required <= capacity : null };
+        last: amounts.last, required: amounts.required, initialMinimum: minimumInitial(tariff, months + 1),
+        initialValid: initial >= minimumInitial(tariff, months + 1),
+        fits: hasCapacity ? initial >= minimumInitial(tariff, months + 1) && amounts.required <= capacity : null };
     });
     var viable = options.filter(function(option) { return option.fits; }).sort(function(a,b) { return a.months - b.months; });
     var lowest = options.slice().sort(function(a,b) { return a.required - b.required || a.months - b.months; });
@@ -97,14 +92,14 @@
       });
       if (!Array.isArray(item.modulos_incluidos) || item.modulos_incluidos.length !== item.numero_modulos) { errors.push("Módulos inconsistentes."); }
     });
-    if (packages.size !== 15 || keys.size !== 160 || CONDITIONS.some(function(condition) {
+    if (packages.size !== 15 || keys.size !== 120 || CONDITIONS.some(function(condition) {
       var records = (catalog || []).filter(function(item) { return item.condicion_id === condition; });
-      return records.length !== 40 || new Set(records.map(function(item) { return item.plan_id; })).size !== 15;
+      return records.length !== 30 || new Set(records.map(function(item) { return item.plan_id; })).size !== 15;
     })) { errors.push("El catálogo oficial está incompleto."); }
     return Object.freeze({ valid: errors.length === 0, errors: Object.freeze(errors), counts: { total: keys.size, combinaciones: packages.size } });
   }
   global.SMART_MIX_CORE = Object.freeze({ CONDITIONS: CONDITIONS, roundDivide: roundDivide,
-    alternatives: alternatives, flexibleTerm: flexibleTerm, monthlyAgreement: monthlyAgreement,
+    minimumInitial: minimumInitial, earlyPayment: earlyPayment, alternatives: alternatives, flexibleTerm: flexibleTerm, monthlyAgreement: monthlyAgreement,
     negotiationOptions: negotiationOptions, linguaskillEligible: linguaskillEligible,
     validateCatalog: validateCatalog });
 })(typeof window !== "undefined" ? window : globalThis);

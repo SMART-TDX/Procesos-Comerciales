@@ -212,7 +212,7 @@
               <span>¿En cuántos pagos quieres organizar la propuesta?</span>
               <select id="mensualidades-deseadas" class="quote-input" disabled aria-describedby="flexible-term-help"></select>
               <small id="selected-payment-summary" class="selected-payment-summary" aria-live="polite" hidden></small>
-              <small id="flexible-term-help">Las opciones se actualizan con la cuota inicial propuesta. El precio de la tarifa se conserva.</small>
+              <small id="flexible-term-help">Puedes elegir desde 2 pagos hasta el máximo autorizado. La cuota inicial mínima depende del plazo; el precio financiado se conserva.</small>
             </label>
             <div id="negotiation-panel" class="no-print" hidden>
               <p id="capacity-status" class="capacity-status" role="status" aria-live="polite" hidden></p>
@@ -222,6 +222,17 @@
             <p id="shorter-plan-warning" class="commercial-warning no-print" role="status" hidden></p>
             <p id="finance-empty-help" class="finance-empty-help">Define la cuota inicial acordada para calcular las mensualidades.</p>
           </div>
+
+          <section id="early-payment-section" class="early-payment-panel" hidden>
+            <h3>Beneficio especial de Pronto Pago</h3>
+            <label class="full-package-option"><input id="pronto-pago" type="checkbox" autocomplete="off"> Ofrecer precio de contado con plazo especial</label>
+            <p>El contrato se registra financiado. Si el cliente completa el valor requerido dentro del plazo acordado, puede acceder al precio de contado.</p>
+            <div id="early-payment-options" hidden>
+              <label class="field"><span>Plazo del beneficio</span><select id="pronto-pago-dias" aria-describedby="early-payment-error"><option value="">Selecciona el plazo</option><option value="30">30 días calendario</option><option value="60">60 días calendario</option></select></label>
+              <p id="early-payment-error" role="alert" class="validation-alert"></p>
+            </div>
+            <div id="advisor-early-payment" class="early-payment-summary" aria-live="polite" hidden></div>
+          </section>
 
           <div id="validation-alert" class="validation-alert" role="alert" hidden></div>
           <div id="commercial-message" class="commercial-message finance-only" hidden></div>
@@ -505,6 +516,8 @@
         </div>
       </section>
 
+      <section id="client-early-payment" class="early-payment-summary" hidden></section>
+
       <section id="client-additionals-section" class="client-additionals" hidden>
         <div class="client-section-heading">
           <span>Beneficio promocional</span>
@@ -721,7 +734,6 @@
   <script src="configuracion_jefes_ventas.js"></script>
   <script src="tarifas_smart_mix.js"></script>
   <script src="smart_mix.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.14.0/html2pdf.bundle.min.js" onerror="this.onerror=null;this.src='https://unpkg.com/html2pdf.js@0.14.0/dist/html2pdf.bundle.min.js';"></script>
-  <script src="aplicacion.js?v=20261026-3"></script>
+  <script src="aplicacion.js"></script>
 </body>
 </html>

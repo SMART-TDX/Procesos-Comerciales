@@ -345,8 +345,10 @@
       result.errors.push("Ingresa una cuota inicial propuesta en pesos enteros.");
       return result;
     }
-    if (proposedInitial < tariff.cuota_inicial_minima_cop) {
-      result.errors.push("El valor ingresado no cumple las condiciones autorizadas para esta alternativa de pago. Revisa la cuota inicial propuesta.");
+    var realPayments = options.monthlyCount === undefined ? tariff.numero_pagos : Number(options.monthlyCount) + 1;
+    var minimumInitial = global.SMART_MIX_CORE.minimumInitial(tariff, realPayments);
+    if (minimumInitial === null || proposedInitial < minimumInitial) {
+      result.errors.push("La cuota inicial propuesta debe ser al menos " + formatCOP(minimumInitial || 0) + " para el plazo elegido. Revisa el acuerdo.");
       return result;
     }
     if (proposedInitial > tariff.valor_total_oficial_cop) {
@@ -400,7 +402,7 @@
     result.valid = runningBalance === 0 && sum === tariff.valor_total_oficial_cop;
     result.rows = rows;
     result.initialCop = proposedInitial;
-    result.additionalInitialCop = proposedInitial - tariff.cuota_inicial_minima_cop;
+    result.additionalInitialCop = proposedInitial - minimumInitial;
     result.pendingBalanceCop = balance;
     result.remainingPayments = remaining;
     result.regularMonthlyCop = regular;
@@ -763,6 +765,7 @@
         "*Primera mensualidad:* " + data.firstMonthlyDateText);
     }
     lines.push("*Valor final del servicio:* " + formatCOP(data.totalContractCop));
+    if (data.earlyPayment && data.earlyPayment.valid) { lines.push("", earlyPaymentLines(data.earlyPayment).map(function(line) { return earlyPaymentLabelParts(line).map(function(part) { return part.label ? "*" + part.text + "*" : part.text; }).join(""); }).join("\n"), ""); }
     if ((data.additionals || []).length) {
       lines.push("", "*BENEFICIOS QUE ACOMPAÑAN TU PROPUESTA*");
       data.additionals.forEach(function (benefit) {
@@ -819,6 +822,42 @@
     ];
   }
 
+  // Solo las etiquetas se resaltan; los textos e importes originales se conservan.
+  function earlyPaymentLabelParts(line) {
+    return line.split(/(Inicio del plazo:|Pago inicial(?: propuesto)?:|Precio total con beneficio:|Saldo por completar:|Fecha límite(?: máxima)?:|Saldo inicial para completar contado:|Saldo estimado posterior:|Saldo estimado adicional por completar:|mensualidad programada aplicable:|valor necesario para completar Pronto Pago:)/g)
+      .map(function(text, index) { return { text: text, label: index % 2 === 1 }; });
+  }
+
+  function earlyPaymentLines(p) {
+    if (!p || !p.valid) { return []; }
+    if (p.days === 30) {
+      return ["BENEFICIO DE PRECIO DE CONTADO POR PRONTO PAGO",
+        "Tu matrícula se realizará inicialmente bajo modalidad financiada. Si completas el valor pendiente dentro de los próximos 30 días calendario, podrás acceder al precio de contado.",
+        "Pago inicial: " + formatCOP(p.initialCop),
+        "Precio total con beneficio: " + formatCOP(p.cashCop),
+        "Saldo por completar: " + formatCOP(p.initialBalanceCop),
+        "Fecha límite: " + formatDateLong(p.deadline),
+        "Completa " + formatCOP(p.initialBalanceCop) + " antes de la fecha indicada para conservar el precio de contado.",
+        "Si no utilizas este beneficio dentro del plazo establecido, tu contrato continuará normalmente con las condiciones y el calendario del plan financiado originalmente seleccionado.",
+        "Beneficio aplicable sujeto al cumplimiento de las condiciones y fechas indicadas."];
+    }
+    var lines = ["BENEFICIO DE PRECIO DE CONTADO POR PRONTO PAGO",
+      "Tu matrícula se realizará inicialmente bajo modalidad financiada. Puedes acceder al precio de contado si completas el valor requerido dentro de " + p.days + " días calendario.",
+      "Inicio del plazo: confirmación estimada del pago inicial, " + formatDateLong(p.baseDate) + ".",
+      "Pago inicial propuesto: " + formatCOP(p.initialCop) + ". Precio total con beneficio: " + formatCOP(p.cashCop) + ".",
+      "Saldo inicial para completar contado: " + formatCOP(p.initialBalanceCop) + "."];
+    p.projections.forEach(function(payment) {
+      lines.push(formatDateLong(payment.date) + ": " + (payment.completes ? "valor necesario para completar Pronto Pago: " : "mensualidad programada aplicable: ") + formatCOP(payment.amountCop) + "." +
+        (payment.completes ? " Con este pago podrías completar exactamente el precio de contado en esa fecha." : " Saldo estimado posterior: " + formatCOP(payment.balanceCop) + "."));
+    });
+    if (p.days === 60) { lines.push("El contrato financiado continúa activo: la mensualidad del primer mes sigue siendo exigible. Su pago se descuenta del saldo del beneficio."); }
+    lines.push("Saldo estimado adicional por completar: " + formatCOP(p.remainingCop) + ". Fecha límite máxima: " + formatDateLong(p.deadline) + ".",
+      "Esta es una proyección; no acredita pagos realizados. Los pagos efectivamente aplicados se descuentan una sola vez del precio de contado.",
+      "Si completas el valor pendiente dentro del plazo, conservas el precio de contado. Si no, el contrato continúa normalmente con el valor y calendario financiados originalmente seleccionados.",
+      "Beneficio aplicable sujeto al cumplimiento de las condiciones y fechas aquí indicadas.");
+    return lines;
+  }
+
   function commercialShareLines(data) {
     var lines = ["Módulos: " + data.programName + " · " + data.academicHours + " horas.",
       "Clases presenciales, virtuales o alternando ambas según tu preferencia.",
@@ -831,6 +870,7 @@
         "Primera mensualidad: " + data.firstMonthlyDateText + ".");
     }
     lines.push("Valor final del servicio: " + formatCOP(data.totalContractCop) + ".");
+    if (data.earlyPayment && data.earlyPayment.valid) { lines.push("", earlyPaymentLines(data.earlyPayment).join("\n"), ""); }
     if ((data.additionals || []).length) {
       lines.push("Beneficios incluidos:");
       data.additionals.forEach(function(b) { lines.push("• " + b.title + ": " + formatCOP(b.valueCop)); });
@@ -1774,7 +1814,7 @@
   function paymentOptionLabel(number) {
     return number === 1
       ? "Pago de contado"
-      : number + " pagos — 1 inicial + " + (number - 1) + " mensuales";
+      : "Financiado hasta " + number + " pagos";
   }
 
   function populatePaymentOptions(preferred) {
@@ -2241,6 +2281,7 @@
 
 
   function clearCalculatedProposal() {
+    resetEarlyPayment();
     currentTariff = null;
     currentCalculation = null;
     elements["capacidad-mensual"].value = "";
@@ -2311,6 +2352,8 @@
       return;
     }
     if (resetInitial) {
+      resetEarlyPayment();
+      elements["capacidad-mensual"].value = "";
       elements["mensualidades-deseadas"].value = "";
       setMoneyInput("");
     }
@@ -2326,6 +2369,44 @@
     var list = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
     elements["validation-alert"].hidden = list.length === 0;
     elements["validation-alert"].textContent = list.join(" ");
+  }
+
+  function resetEarlyPayment() {
+    byId("pronto-pago").checked = false; byId("pronto-pago-dias").value = "";
+    byId("early-payment-error").textContent = "";
+    ["advisor-early-payment", "client-early-payment"].forEach(function(id) { byId(id).replaceChildren(); byId(id).hidden = true; });
+    byId("early-payment-options").hidden = true;
+    byId("early-payment-section").hidden = true;
+  }
+  function syncEarlyPaymentEligibility() {
+    var initial = parseCOPInput(elements["cuota-propuesta"].value);
+    var select = byId("pronto-pago-dias"), error = byId("early-payment-error");
+    select.querySelector('[value="60"]').disabled = initial === null || initial < 700000;
+    if (select.value === "60" && (initial === null || initial < 700000)) {
+      select.value = ""; error.textContent = "La opción de 60 días requiere una cuota inicial de $700.000 o más.";
+    } else if (select.value || !byId("pronto-pago").checked) { error.textContent = ""; }
+  }
+  function currentEarlyPayment() {
+    if (!byId("pronto-pago").checked || !currentTariff || currentTariff.numero_pagos === 1) { return null; }
+    return global.SMART_MIX_CORE.earlyPayment(currentTariff, currentCalculation, Number(byId("pronto-pago-dias").value), mixTariffs);
+  }
+  function renderEarlyPayment() {
+    var enabled = currentTariff && currentTariff.numero_pagos > 1;
+    byId("early-payment-section").hidden = !enabled;
+    byId("early-payment-options").hidden = !enabled || !byId("pronto-pago").checked;
+    var benefit = currentEarlyPayment();
+    ["advisor-early-payment", "client-early-payment"].forEach(function(id) {
+      var target = byId(id); target.replaceChildren(); target.hidden = !benefit || !benefit.valid;
+      earlyPaymentLines(benefit).forEach(function(line,index) {
+        var node = document.createElement(index ? "p" : "h3");
+        if (!index) { node.textContent = line; }
+        else { earlyPaymentLabelParts(line).forEach(function(part) {
+          if (part.label) { var label = document.createElement("strong"); label.textContent = part.text; node.appendChild(label); }
+          else { node.appendChild(document.createTextNode(part.text)); }
+        }); }
+        target.appendChild(node);
+      });
+    });
   }
 
   function currentMonthlyCapacity() {
@@ -2359,14 +2440,18 @@
     var previous = input.value, hadOptions = input.options.length > 1;
     var flex = global.SMART_MIX_CORE.flexibleTerm(currentTariff, parseCOPInput(elements["cuota-propuesta"].value), mixTariffs);
     var state = currentNegotiation();
-    var options = state.options.map(function(option) {
+    var displayOptions = state.options.length ? state.options : flex.options.map(function(months) { return { months: months, payments: months + 1, monthly: 0, initialValid: false }; });
+    var options = displayOptions.map(function(option) {
       return {id:option.months, label:option.payments + " pagos totales · " + option.months +
-        (option.months === 1 ? " mensualidad · " : " mensualidades · ") + formatCOP(option.monthly) + " aprox." +
+        (option.months === 1 ? " mensualidad · " : " mensualidades · ") + (option.monthly ? formatCOP(option.monthly) + " aprox." : "Inicial mínima " + formatCOP(global.SMART_MIX_CORE.minimumInitial(currentTariff, option.payments))) +
+        (!option.initialValid ? " · Revisa cuota inicial mínima" : "") +
         (state.hasCapacity ? (option.fits ? " · Se ajusta" : " · Supera capacidad") : "") +
         (state.recommended === option ? " · RECOMENDADO" : "")};
     });
     replaceOptions(input, options, "id", "label", previous || (!hadOptions && options.length ? String(options[0].id) : ""), "Selecciona los pagos");
-    input.disabled = !flex.valid || currentTariff.numero_pagos === 1;
+    input.disabled = currentTariff.numero_pagos === 1;
+    var selectedMinimum = global.SMART_MIX_CORE.minimumInitial(currentTariff, Number(input.value) + 1);
+    byId("cuota-help").textContent = selectedMinimum ? "Cuota inicial mínima para este plazo: " + formatCOP(selectedMinimum) + ". Puedes proponer un valor superior." : "Ingresa el valor acordado con el cliente.";
     elements["shorter-plan-warning"].textContent = flex.warning;
     elements["shorter-plan-warning"].hidden = !flex.warning;
     elements["shorter-plan-warning"].classList.toggle("strong-warning", flex.warningLevel === "strong");
@@ -2384,14 +2469,14 @@
         : selected.fits ? "Esta alternativa se ajusta a la capacidad indicada."
         : "Esta alternativa supera la capacidad indicada. Puedes confirmar una nueva capacidad con el cliente.";
     }
-    if (state.hasCapacity) {
+    if (state.hasCapacity && state.lowest) {
       recommendation.hidden = false;
       recommendation.textContent = state.recommended
         ? "Con la capacidad mensual indicada, la alternativa más corta viable es de " + state.recommended.payments + " pagos."
         : "Ninguna alternativa se ajusta todavía a la capacidad indicada. La opción de menor mensualidad es de " +
           state.lowest.payments + " pagos, aproximadamente " + formatCOP(state.lowest.monthly) + " mensuales.";
     }
-    button.hidden = !selected || invalid;
+    button.hidden = !selected || !selected.initialValid || invalid;
     if (selected) {
       elements["selected-payment-summary"].hidden = false;
       elements["selected-payment-summary"].textContent = selected.payments + " pagos totales · " + selected.months +
@@ -2406,7 +2491,7 @@
     if (!currentTariff) { return; }
     var state = currentNegotiation();
     var selected = state.options.find(function(option) { return option.months === Number(elements["mensualidades-deseadas"].value); });
-    if (!selected || (elements["capacidad-mensual"].value.trim() && !state.hasCapacity)) { return; }
+    if (!selected || !selected.initialValid || (elements["capacidad-mensual"].value.trim() && !state.hasCapacity)) { return; }
     if (state.hasCapacity && !selected.fits) {
       elements["capacidad-mensual"].value = formatInteger(selected.required);
     }
@@ -2415,6 +2500,7 @@
   }
 
   function calculateAndRender() {
+    syncEarlyPaymentEligibility();
     refreshInitialPaymentCalendar();
     if (!ensureCommercialAvailability(false)) {
       var context = currentCommercialContext();
@@ -2453,9 +2539,10 @@
       firstMonthlyDate: elements["fecha-primera-cuota"].value,
       monthlyCount: Number(elements["mensualidades-deseadas"].value)
     });
-    showValidation(currentCalculation.errors);
+    var early = currentEarlyPayment();
+    showValidation(currentCalculation.errors.concat(early && !early.valid ? [early.error] : []));
     renderProposal();
-    return currentCalculation.valid && !capacityBlocksGeneration();
+    return currentCalculation.valid && (!early || early.valid) && !capacityBlocksGeneration();
   }
 
   function renderPaymentRows(target, rows, compact) {
@@ -2486,6 +2573,7 @@
     if (!currentTariff) {
       return;
     }
+    renderEarlyPayment();
     renderProductLabels();
     var calculation = currentCalculation || {};
     var isCash = currentTariff.numero_pagos === 1;
@@ -2640,7 +2728,7 @@
   function handlePlanChange() { markModified(); clearAdditionalSelection(); populatePaymentOptions(""); clearCalculatedProposal(); updateProgressiveForm(4); }
 
   function handleConditionChange() {
-    var collaboratorTransition = previousCondition === "COLABORADOR" || elements.condicion.value === "COLABORADOR";
+    var collaboratorTransition = true; // Las cuatro condiciones V2 comparten modalidades y combinaciones.
     var compatiblePlan = collaboratorTransition ? elements.plan.value : "";
     var compatiblePayments = collaboratorTransition ? elements["numero-pagos"].value : "";
     previousCondition = elements.condicion.value;
@@ -2804,7 +2892,7 @@
   }
 
   function currentNegotiationSignature() {
-    return JSON.stringify(["cliente","cliente-pais","cliente-indicativo-otro","cliente-celular","cliente-correo","asesor","observacion","ciudad-zona","sede","condicion","plan","numero-pagos","cuota-propuesta","capacidad-mensual","mensualidades-deseadas","fecha-matricula","fecha-acreditacion-pago-inicial-estimada","fecha-primera-cuota"].map(function(id){ return elements[id].value; }));
+    return JSON.stringify(["cliente","cliente-pais","cliente-indicativo-otro","cliente-celular","cliente-correo","asesor","observacion","ciudad-zona","sede","condicion","plan","numero-pagos","cuota-propuesta","capacidad-mensual","mensualidades-deseadas","fecha-matricula","fecha-acreditacion-pago-inicial-estimada","fecha-primera-cuota"].map(function(id){ return elements[id].value; }).concat([byId("pronto-pago").checked, byId("pronto-pago-dias").value]));
   }
 
   function ensureCurrentQuote() {
@@ -2876,6 +2964,7 @@
     var manager = selectedSalesManager();
     var formattedPhone = normalizedClientPhone();
     return {
+      earlyPayment: currentEarlyPayment(),
       contextId: normalizeShareContext(contextId),
       clientName: elements.cliente.value.trim(),
       advisorName: elements.asesor.value.trim(),
@@ -3661,7 +3750,8 @@
       "#client-view .client-greeting",
       "#client-view .client-program",
       "#client-view .client-payment-summary",
-      "#client-view .client-price-grid"
+      "#client-view .client-price-grid",
+      "#client-view #client-early-payment"
     ];
 
   var PRINT_POST_BONUSES_SELECTORS = [
@@ -3675,6 +3765,7 @@
     "PROGRAM",
     "PAYMENT_HIGHLIGHT",
     "ECONOMIC_SUMMARY",
+    "EARLY_PAYMENT",
     "BONUSES",
     "BONUSES_TOTAL",
     "MONTHLY_REDUCTION_MESSAGE",
@@ -3690,6 +3781,7 @@
     "#client-view .client-program": "PROGRAM",
     "#client-view .client-payment-summary": "PAYMENT_HIGHLIGHT",
     "#client-view .client-price-grid": "ECONOMIC_SUMMARY",
+    "#client-view #client-early-payment": "EARLY_PAYMENT",
     "#client-view #client-additionals-total-section": "BONUSES_TOTAL",
     "#client-view #client-commercial-message": "MONTHLY_REDUCTION_MESSAGE"
   };
@@ -4750,78 +4842,6 @@
     }
   }
 
-  async function downloadPreparedDocumentAsPdf(session, fileName) {
-    if (typeof global.html2pdf !== "function") {
-      throw new Error("MOTOR_PDF_NO_DISPONIBLE");
-    }
-    var host = elements["print-document"];
-    var previousHostStyle = host.getAttribute("style");
-    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
-    var previousSheetStyles = sheets.map(function (sheet) {
-      return sheet.getAttribute("style");
-    });
-    if (!sheets.length) {
-      throw new Error("DOCUMENTO_PDF_VACIO");
-    }
-
-    host.classList.add("is-measuring", "print-active");
-    host.setAttribute("aria-hidden", "false");
-    host.style.left = "0";
-    host.style.zIndex = "-1000";
-    host.style.pointerEvents = "none";
-    sheets.forEach(function (sheet) {
-      sheet.style.setProperty("break-before", "auto", "important");
-      sheet.style.setProperty("break-after", "auto", "important");
-      sheet.style.setProperty("page-break-before", "auto", "important");
-      sheet.style.setProperty("page-break-after", "auto", "important");
-      sheet.style.setProperty("height", "296.8mm", "important");
-    });
-
-    try {
-      var pdfOptions = {
-        margin: 0,
-        filename: fileName || "Cotizacion_Smart_Mix.pdf",
-        image: { type: "jpeg", quality: 0.96 },
-        html2canvas: {
-          scale: 1.35,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          logging: false,
-          windowWidth: 794
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
-      };
-      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
-      var pdf = await firstWorker.get("pdf");
-      while (pdf.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.getNumberOfPages());
-      }
-      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
-        var canvas = await global.html2pdf()
-          .set(pdfOptions)
-          .from(sheets[sheetIndex])
-          .toCanvas()
-          .get("canvas");
-        pdf.addPage("a4", "portrait");
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
-      }
-      pdf.save(pdfOptions.filename);
-    } finally {
-      sheets.forEach(function (sheet, index) {
-        if (previousSheetStyles[index] === null) {
-          sheet.removeAttribute("style");
-        } else {
-          sheet.setAttribute("style", previousSheetStyles[index]);
-        }
-      });
-      if (previousHostStyle === null) {
-        host.removeAttribute("style");
-      } else {
-        host.setAttribute("style", previousHostStyle);
-      }
-    }
-  }
-
   async function continuePrinting() {
     if (isPrinting) {
       showToast("Ya existe una impresión en preparación. Espera a que finalice.");
@@ -4852,19 +4872,8 @@
       session.documentTitleBeforePrint = document.title;
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
-      updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
-      showToast("Generando y descargando el PDF...");
-      try {
-        await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
-        cleanupPrintSession("descarga_pdf_directa");
-        showToast("PDF descargado correctamente.");
-      } catch (error) {
-        cleanupPrintSession("descarga_pdf_fallida");
-        showToast(error && error.message === "MOTOR_PDF_NO_DISPONIBLE"
-          ? "No cargó el generador de PDF. Actualiza la página e inténtalo nuevamente."
-          : "No fue posible descargar el PDF. Reintenta la descarga.");
-      }
-      return;
+      updateLastPrintDiagnostics({ destinoPdfPreparado: true });
+      showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
     }
     printLaunchTimer = global.setTimeout(function () {
       printLaunchTimer = null;
@@ -4892,12 +4901,6 @@
     if (!ensureCurrentQuote()) {
       return;
     }
-    if (saveAsPdf) {
-      pendingPrintSaveAsPdf = true;
-      pendingPrintFileName = suggestedFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
-      void continuePrinting();
-      return;
-    }
     if (elements["print-guidance-dialog"].open) {
       return;
     }
@@ -4914,6 +4917,7 @@
 
   function newQuote() {
     quoteSessionVersion += 1;
+    resetEarlyPayment();
     closeSharePreview();
     closeGmailAccountConfirmation();
     closeWhatsAppFollowup();
@@ -5014,6 +5018,10 @@
   }
 
   function bindEvents() {
+    ["pronto-pago", "pronto-pago-dias"].forEach(function(id) { byId(id).addEventListener("change", function() {
+      markModified(); if (id === "pronto-pago" && !byId(id).checked) { resetEarlyPayment(); }
+      calculateAndRender();
+    }); });
     elements["ciudad-zona"].addEventListener("change", function() {
       markModified(); populateSites(""); resetDependentTariffSelectors(); showValidation([]); updateProgressiveForm(1);
     });
@@ -5091,7 +5099,7 @@
     byId("btn-whatsapp").addEventListener("click", openSharePreview);
     byId("btn-client-compartir").addEventListener("click", openSharePreview);
     byId("btn-client-whatsapp").addEventListener("click", openSharePreview);
-    byId("btn-imprimir").addEventListener("click", function () { printProposal(true); });
+    byId("btn-imprimir").addEventListener("click", function () { printProposal(false); });
     byId("btn-pdf").addEventListener("click", function () { printProposal(true); });
     byId("btn-client-print").addEventListener("click", function () { printProposal(true); });
     byId("btn-cerrar-compartir").addEventListener("click", closeSharePreview);
