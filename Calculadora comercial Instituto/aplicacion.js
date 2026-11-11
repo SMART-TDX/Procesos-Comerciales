@@ -5611,6 +5611,76 @@
   var pendingPrintSaveAsPdf = false;
   var pendingPrintFileName = "";
 
+  async function downloadPreparedDocumentAsPdf(session, fileName) {
+    if (typeof global.html2pdf !== "function") {
+      throw new Error("MOTOR_PDF_NO_DISPONIBLE");
+    }
+    var host = elements["print-document"];
+    var previousHostStyle = host.getAttribute("style");
+    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+    var previousSheetStyles = sheets.map(function (sheet) { return sheet.getAttribute("style"); });
+    if (!sheets.length) {
+      throw new Error("DOCUMENTO_PDF_VACIO");
+    }
+    host.classList.add("is-measuring", "print-active");
+    host.setAttribute("aria-hidden", "false");
+    host.style.left = "0";
+    host.style.zIndex = "-1000";
+    host.style.pointerEvents = "none";
+    await waitForNextPrintFrame();
+    var hostLeftOffset = host.getBoundingClientRect().left;
+    if (Math.abs(hostLeftOffset) > 0.5) {
+      host.style.left = String(Math.round(-hostLeftOffset)) + "px";
+      await waitForNextPrintFrame();
+    }
+    sheets.forEach(function (sheet) {
+      sheet.style.setProperty("break-before", "auto", "important");
+      sheet.style.setProperty("break-after", "auto", "important");
+      sheet.style.setProperty("page-break-before", "auto", "important");
+      sheet.style.setProperty("page-break-after", "auto", "important");
+      sheet.style.setProperty("height", "296.8mm", "important");
+    });
+    try {
+      var pdfOptions = {
+        margin: 0,
+        filename: fileName || "Cotizacion_Smart.pdf",
+        image: { type: "jpeg", quality: 0.96 },
+        html2canvas: {
+          scale: 1.35,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          windowWidth: 794
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
+      };
+      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
+      var pdf = await firstWorker.get("pdf");
+      while (pdf.getNumberOfPages() > 1) {
+        pdf.deletePage(pdf.getNumberOfPages());
+      }
+      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
+        var canvas = await global.html2pdf().set(pdfOptions).from(sheets[sheetIndex]).toCanvas().get("canvas");
+        pdf.addPage("a4", "portrait");
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
+      }
+      pdf.save(pdfOptions.filename);
+    } finally {
+      sheets.forEach(function (sheet, index) {
+        if (previousSheetStyles[index] === null) {
+          sheet.removeAttribute("style");
+        } else {
+          sheet.setAttribute("style", previousSheetStyles[index]);
+        }
+      });
+      if (previousHostStyle === null) {
+        host.removeAttribute("style");
+      } else {
+        host.setAttribute("style", previousHostStyle);
+      }
+    }
+  }
+
   function closePrintGuidance() {
     if (typeof elements["print-guidance-dialog"].close === "function") {
       elements["print-guidance-dialog"].close();
@@ -5650,12 +5720,30 @@
       showToast("No fue posible generar correctamente el resumen económico. Reintenta la impresión.");
       return;
     }
-    if (saveAsPdf) {
+    if (false && saveAsPdf) {
       session.documentTitleBeforePrint = document.title;
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
       updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName });
       showToast("En Destino selecciona “Guardar como PDF” y conserva la configuración indicada.");
+    }
+    if (saveAsPdf) {
+      session.documentTitleBeforePrint = document.title;
+      session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
+      document.title = session.pdfFileName.replace(/\.pdf$/i, "");
+      updateLastPrintDiagnostics({ nombreArchivoPdfSugerido: session.pdfFileName, descargaPdfDirecta: true });
+      showToast("Generando y descargando el PDF...");
+      try {
+        await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
+        cleanupPrintSession("descarga_pdf_directa");
+        showToast("PDF descargado correctamente.");
+      } catch (error) {
+        cleanupPrintSession("descarga_pdf_fallida");
+        showToast(error && error.message === "MOTOR_PDF_NO_DISPONIBLE"
+          ? "No cargó el generador de PDF. Actualiza la página e inténtalo nuevamente."
+          : "No fue posible descargar el PDF. Reintenta la descarga.");
+      }
+      return;
     }
     global.setTimeout(function () {
       if (!activePrintSession || activePrintSession.id !== session.id) {
