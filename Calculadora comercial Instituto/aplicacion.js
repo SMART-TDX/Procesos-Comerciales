@@ -5615,31 +5615,23 @@
     if (typeof global.html2pdf !== "function") {
       throw new Error("MOTOR_PDF_NO_DISPONIBLE");
     }
-    var host = elements["print-document"];
-    var previousHostStyle = host.getAttribute("style");
     var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
-    var previousSheetStyles = sheets.map(function (sheet) { return sheet.getAttribute("style"); });
     if (!sheets.length) {
       throw new Error("DOCUMENTO_PDF_VACIO");
     }
-    host.classList.add("is-measuring", "print-active");
-    host.setAttribute("aria-hidden", "false");
-    host.style.left = "0";
-    host.style.zIndex = "-1000";
-    host.style.pointerEvents = "none";
-    await waitForNextPrintFrame();
-    var hostLeftOffset = host.getBoundingClientRect().left;
-    if (Math.abs(hostLeftOffset) > 0.5) {
-      host.style.left = String(Math.round(-hostLeftOffset)) + "px";
-      await waitForNextPrintFrame();
-    }
-    sheets.forEach(function (sheet) {
-      sheet.style.setProperty("break-before", "auto", "important");
-      sheet.style.setProperty("break-after", "auto", "important");
-      sheet.style.setProperty("page-break-before", "auto", "important");
-      sheet.style.setProperty("page-break-after", "auto", "important");
-      sheet.style.setProperty("height", "296.8mm", "important");
+    var stagingHost = document.createElement("div");
+    Object.assign(stagingHost.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      zIndex: "2147483647",
+      width: "210mm",
+      margin: "0",
+      padding: "0",
+      pointerEvents: "none",
+      background: "#ffffff"
     });
+    document.body.appendChild(stagingHost);
     try {
       var pdfOptions = {
         margin: 0,
@@ -5654,29 +5646,50 @@
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
       };
-      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
-      var pdf = await firstWorker.get("pdf");
-      while (pdf.getNumberOfPages() > 1) {
-        pdf.deletePage(pdf.getNumberOfPages());
-      }
-      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
-        var canvas = await global.html2pdf().set(pdfOptions).from(sheets[sheetIndex]).toCanvas().get("canvas");
-        pdf.addPage("a4", "portrait");
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
+      var pdf = null;
+      for (var sheetIndex = 0; sheetIndex < sheets.length; sheetIndex += 1) {
+        stagingHost.textContent = "";
+        var sheet = sheets[sheetIndex].cloneNode(true);
+        sheet.style.breakBefore = "auto";
+        sheet.style.breakAfter = "auto";
+        sheet.style.pageBreakBefore = "auto";
+        sheet.style.pageBreakAfter = "auto";
+        sheet.style.width = "210mm";
+        sheet.style.minWidth = "210mm";
+        sheet.style.maxWidth = "210mm";
+        sheet.style.height = "296.8mm";
+        sheet.style.margin = "0";
+        sheet.style.transform = "none";
+        stagingHost.appendChild(sheet);
+        await waitForNextPrintFrame();
+
+        var captureWidth = Math.ceil(Math.max(sheet.scrollWidth, sheet.getBoundingClientRect().width, 794));
+        var captureHeight = Math.ceil(Math.max(sheet.scrollHeight, sheet.getBoundingClientRect().height));
+        pdfOptions.html2canvas.width = captureWidth;
+        pdfOptions.html2canvas.height = captureHeight;
+        pdfOptions.html2canvas.windowWidth = captureWidth;
+        pdfOptions.html2canvas.windowHeight = captureHeight;
+        pdfOptions.html2canvas.x = 0;
+        pdfOptions.html2canvas.y = 0;
+        pdfOptions.html2canvas.scrollX = 0;
+        pdfOptions.html2canvas.scrollY = 0;
+
+        if (sheetIndex === 0) {
+          var firstWorker = global.html2pdf().set(pdfOptions).from(sheet).toCanvas().toPdf();
+          pdf = await firstWorker.get("pdf");
+          while (pdf.getNumberOfPages() > 1) {
+            pdf.deletePage(pdf.getNumberOfPages());
+          }
+        } else {
+          var canvas = await global.html2pdf().set(pdfOptions).from(sheet).toCanvas().get("canvas");
+          pdf.addPage("a4", "portrait");
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
+        }
       }
       pdf.save(pdfOptions.filename);
     } finally {
-      sheets.forEach(function (sheet, index) {
-        if (previousSheetStyles[index] === null) {
-          sheet.removeAttribute("style");
-        } else {
-          sheet.setAttribute("style", previousSheetStyles[index]);
-        }
-      });
-      if (previousHostStyle === null) {
-        host.removeAttribute("style");
-      } else {
-        host.setAttribute("style", previousHostStyle);
+      if (stagingHost.isConnected) {
+        stagingHost.remove();
       }
     }
   }
