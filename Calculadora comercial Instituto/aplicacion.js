@@ -5612,81 +5612,90 @@
   var pendingPrintFileName = "";
 
   async function downloadPreparedDocumentAsPdf(session, fileName) {
-    if (typeof global.html2pdf !== "function") {
+    if (typeof global.html2pdf !== "function" || !global.jspdf || !global.jspdf.jsPDF) {
       throw new Error("MOTOR_PDF_NO_DISPONIBLE");
     }
     var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
     if (!sheets.length) {
       throw new Error("DOCUMENTO_PDF_VACIO");
     }
-    var stagingHost = document.createElement("div");
-    Object.assign(stagingHost.style, {
+
+    var host = document.createElement("div");
+    Object.assign(host.style, {
       position: "fixed",
-      top: "0",
-      left: "0",
+      top: "0px",
+      left: "0px",
       zIndex: "2147483647",
-      width: "210mm",
+      width: "794px",
+      height: "1123px",
       margin: "0",
       padding: "0",
-      pointerEvents: "none"
+      overflow: "hidden",
+      pointerEvents: "none",
+      background: "#ffffff"
     });
-    document.body.appendChild(stagingHost);
+    document.body.appendChild(host);
 
     try {
-      var options = {
-        margin: 0,
-        filename: fileName || "Cotizacion_Smart.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: "#ffffff",
-          logging: false
-        },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: { mode: ["css", "legacy"] }
-      };
-      var pdf = null;
-
-      for (var index = 0; index < sheets.length; index += 1) {
-        stagingHost.textContent = "";
-        var sheet = sheets[index].cloneNode(true);
-        sheet.style.breakAfter = "auto";
-        sheet.style.pageBreakAfter = "auto";
-        sheet.style.width = "210mm";
-        sheet.style.minWidth = "210mm";
-        sheet.style.maxWidth = "210mm";
-        sheet.style.margin = "0";
-        sheet.style.transform = "none";
-        stagingHost.appendChild(sheet);
+      var pdf = new global.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+      for (var pageIndex = 0; pageIndex < sheets.length; pageIndex += 1) {
+        host.textContent = "";
+        var frame = document.createElement("div");
+        Object.assign(frame.style, {
+          position: "relative",
+          width: "794px",
+          height: "1123px",
+          margin: "0",
+          padding: "0",
+          overflow: "hidden",
+          background: "#ffffff"
+        });
+        var sheet = sheets[pageIndex].cloneNode(true);
+        Object.assign(sheet.style, {
+          position: "relative",
+          top: "0px",
+          left: "0px",
+          width: "794px",
+          minWidth: "794px",
+          maxWidth: "794px",
+          height: "1123px",
+          minHeight: "1123px",
+          margin: "0px",
+          transform: "none",
+          breakBefore: "auto",
+          breakAfter: "auto",
+          pageBreakBefore: "auto",
+          pageBreakAfter: "auto"
+        });
+        frame.appendChild(sheet);
+        host.appendChild(frame);
+        await waitForNextPrintFrame();
         await waitForNextPrintFrame();
 
-        // La página puede estar embebida en un contenedor más ancho. Para el
-        // PDF se usa exclusivamente el tamaño de la hoja A4 ya preparada.
-        var captureWidth = Math.ceil(sheet.scrollWidth);
-        var captureHeight = Math.ceil(sheet.scrollHeight);
-        options.html2canvas.width = captureWidth;
-        options.html2canvas.height = captureHeight;
-        options.html2canvas.windowWidth = captureWidth;
-        options.html2canvas.windowHeight = captureHeight;
-        options.html2canvas.scrollX = 0;
-        options.html2canvas.scrollY = 0;
+        var canvas = await global.html2pdf().set({
+          margin: 0,
+          html2canvas: {
+            scale: 1.6,
+            useCORS: true,
+            allowTaint: false,
+            backgroundColor: "#ffffff",
+            logging: false,
+            windowWidth: 794,
+            windowHeight: 1123,
+            scrollX: 0,
+            scrollY: 0
+          }
+        }).from(frame).toCanvas().get("canvas");
 
-        if (index === 0) {
-          var firstWorker = global.html2pdf().set(options).from(sheet).toPdf();
-          pdf = await firstWorker.get("pdf");
-        } else {
-          var pageWorker = global.html2pdf().set(options).from(sheet).toCanvas();
-          var canvas = await pageWorker.get("canvas");
+        if (pageIndex > 0) {
           pdf.addPage("a4", "portrait");
-          pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297);
         }
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, 210, 297, undefined, "FAST");
       }
-      pdf.save(options.filename);
+      pdf.save(fileName || "Cotizacion_Smart.pdf");
     } finally {
-      if (stagingHost.isConnected) {
-        stagingHost.remove();
+      if (host.isConnected) {
+        host.remove();
       }
     }
   }
