@@ -5611,6 +5611,93 @@
   var pendingPrintSaveAsPdf = false;
   var pendingPrintFileName = "";
 
+  async function downloadPreparedDocumentAsPdf(session, fileName) {
+    if (typeof global.html2pdf !== "function") {
+      throw new Error("MOTOR_PDF_NO_DISPONIBLE");
+    }
+    var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+    if (!sheets.length) {
+      throw new Error("DOCUMENTO_PDF_VACIO");
+    }
+    var stagingHost = document.createElement("div");
+    Object.assign(stagingHost.style, {
+      position: "fixed",
+      top: "0",
+      left: "0",
+      zIndex: "2147483647",
+      width: "210mm",
+      margin: "0",
+      padding: "0",
+      pointerEvents: "none"
+    });
+    document.body.appendChild(stagingHost);
+
+    try {
+      var options = {
+        margin: 0,
+        filename: fileName || "Cotizacion_Smart.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#ffffff",
+          logging: false
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] }
+      };
+      var pdf = null;
+
+      for (var index = 0; index < sheets.length; index += 1) {
+        stagingHost.textContent = "";
+        var sheet = sheets[index].cloneNode(true);
+        sheet.style.breakAfter = "auto";
+        sheet.style.pageBreakAfter = "auto";
+        sheet.style.width = "210mm";
+        sheet.style.minWidth = "210mm";
+        sheet.style.maxWidth = "210mm";
+        sheet.style.margin = "0";
+        sheet.style.transform = "none";
+        stagingHost.appendChild(sheet);
+        await waitForNextPrintFrame();
+
+        var captureWidth = Math.ceil(Math.max(
+          sheet.scrollWidth,
+          sheet.getBoundingClientRect().width,
+          document.documentElement.clientWidth
+        ));
+        var captureHeight = Math.ceil(Math.max(
+          sheet.scrollHeight,
+          sheet.getBoundingClientRect().height
+        ));
+        options.html2canvas.width = Math.ceil(sheet.scrollWidth);
+        options.html2canvas.height = captureHeight;
+        options.html2canvas.windowWidth = captureWidth;
+        options.html2canvas.windowHeight = captureHeight;
+        options.html2canvas.x = 0;
+        options.html2canvas.y = 0;
+        options.html2canvas.scrollX = 0;
+        options.html2canvas.scrollY = 0;
+
+        if (index === 0) {
+          var firstWorker = global.html2pdf().set(options).from(sheet).toPdf();
+          pdf = await firstWorker.get("pdf");
+        } else {
+          var pageWorker = global.html2pdf().set(options).from(sheet).toCanvas();
+          var canvas = await pageWorker.get("canvas");
+          pdf.addPage("a4", "portrait");
+          pdf.addImage(canvas.toDataURL("image/jpeg", 0.98), "JPEG", 0, 0, 210, 297);
+        }
+      }
+      pdf.save(options.filename);
+    } finally {
+      if (stagingHost.isConnected) {
+        stagingHost.remove();
+      }
+    }
+  }
+
   function closePrintGuidance() {
     if (typeof elements["print-guidance-dialog"].close === "function") {
       elements["print-guidance-dialog"].close();
@@ -5651,6 +5738,20 @@
       return;
     }
     if (saveAsPdf) {
+      session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
+      updateLastPrintDiagnostics({ destinoPdfPreparado: true, descargaPdfDirecta: true });
+      showToast("Generando y descargando el PDF...");
+      try {
+        await downloadPreparedDocumentAsPdf(session, session.pdfFileName);
+        cleanupPrintSession("descarga_pdf_directa");
+        showToast("PDF descargado correctamente.");
+      } catch (error) {
+        cleanupPrintSession("descarga_pdf_fallida");
+        showToast(error && error.message === "MOTOR_PDF_NO_DISPONIBLE"
+          ? "No cargó el generador de PDF. Actualiza la página e inténtalo nuevamente."
+          : "No fue posible descargar el PDF. Reintenta la descarga.");
+      }
+      return;
       session.documentTitleBeforePrint = document.title;
       session.pdfFileName = requestedPdfFileName || buildPdfFileName(currentWhatsAppMessageData(shareContextId));
       document.title = session.pdfFileName.replace(/\.pdf$/i, "");
