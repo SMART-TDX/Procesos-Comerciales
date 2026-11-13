@@ -5612,90 +5612,75 @@
   var pendingPrintFileName = "";
 
   async function downloadPreparedDocumentAsPdf(session, fileName) {
-    if (typeof global.html2pdf !== "function" || !global.jspdf || !global.jspdf.jsPDF) {
+    if (typeof global.html2pdf !== "function") {
       throw new Error("MOTOR_PDF_NO_DISPONIBLE");
     }
+    var host = elements["print-document"];
+    var previousHostStyle = host.getAttribute("style");
     var sheets = Array.from(session.root.querySelectorAll(".print-sheet"));
+    var previousSheetStyles = sheets.map(function (sheet) { return sheet.getAttribute("style"); });
     if (!sheets.length) {
       throw new Error("DOCUMENTO_PDF_VACIO");
     }
 
-    var host = document.createElement("div");
-    Object.assign(host.style, {
-      position: "fixed",
-      top: "0px",
-      left: "0px",
-      zIndex: "2147483647",
-      width: "794px",
-      height: "1123px",
-      margin: "0",
-      padding: "0",
-      overflow: "hidden",
-      pointerEvents: "none",
-      background: "#ffffff"
+    host.classList.add("is-measuring", "print-active");
+    host.setAttribute("aria-hidden", "false");
+    host.style.left = "0";
+    host.style.zIndex = "-1000";
+    host.style.pointerEvents = "none";
+    await waitForNextPrintFrame();
+
+    var hostLeftOffset = host.getBoundingClientRect().left;
+    if (Math.abs(hostLeftOffset) > 0.5) {
+      host.style.left = String(Math.round(-hostLeftOffset)) + "px";
+      await waitForNextPrintFrame();
+    }
+
+    sheets.forEach(function (sheet) {
+      sheet.style.setProperty("break-before", "auto", "important");
+      sheet.style.setProperty("break-after", "auto", "important");
+      sheet.style.setProperty("page-break-before", "auto", "important");
+      sheet.style.setProperty("page-break-after", "auto", "important");
+      sheet.style.setProperty("height", "296.8mm", "important");
     });
-    document.body.appendChild(host);
 
     try {
-      var pdf = new global.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
-      for (var pageIndex = 0; pageIndex < sheets.length; pageIndex += 1) {
-        host.textContent = "";
-        var frame = document.createElement("div");
-        Object.assign(frame.style, {
-          position: "relative",
-          width: "794px",
-          height: "1123px",
-          margin: "0",
-          padding: "0",
-          overflow: "hidden",
-          background: "#ffffff"
-        });
-        var sheet = sheets[pageIndex].cloneNode(true);
-        Object.assign(sheet.style, {
-          position: "relative",
-          top: "0px",
-          left: "0px",
-          width: "794px",
-          minWidth: "794px",
-          maxWidth: "794px",
-          height: "1123px",
-          minHeight: "1123px",
-          margin: "0px",
-          transform: "none",
-          breakBefore: "auto",
-          breakAfter: "auto",
-          pageBreakBefore: "auto",
-          pageBreakAfter: "auto"
-        });
-        frame.appendChild(sheet);
-        host.appendChild(frame);
-        await waitForNextPrintFrame();
-        await waitForNextPrintFrame();
-
-        var canvas = await global.html2pdf().set({
-          margin: 0,
-          html2canvas: {
-            scale: 1.6,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: "#ffffff",
-            logging: false,
-            windowWidth: 794,
-            windowHeight: 1123,
-            scrollX: 0,
-            scrollY: 0
-          }
-        }).from(frame).toCanvas().get("canvas");
-
-        if (pageIndex > 0) {
-          pdf.addPage("a4", "portrait");
-        }
-        pdf.addImage(canvas.toDataURL("image/jpeg", 0.97), "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      var pdfOptions = {
+        margin: 0,
+        filename: fileName || "Cotizacion_Smart.pdf",
+        image: { type: "jpeg", quality: 0.96 },
+        html2canvas: {
+          scale: 1.35,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          logging: false,
+          windowWidth: 794
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait", compress: true }
+      };
+      var firstWorker = global.html2pdf().set(pdfOptions).from(sheets[0]).toCanvas().toPdf();
+      var pdf = await firstWorker.get("pdf");
+      while (pdf.getNumberOfPages() > 1) {
+        pdf.deletePage(pdf.getNumberOfPages());
       }
-      pdf.save(fileName || "Cotizacion_Smart.pdf");
+      for (var sheetIndex = 1; sheetIndex < sheets.length; sheetIndex += 1) {
+        var canvas = await global.html2pdf().set(pdfOptions).from(sheets[sheetIndex]).toCanvas().get("canvas");
+        pdf.addPage("a4", "portrait");
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.96), "JPEG", 0, 0, 210, 296.8, undefined, "FAST");
+      }
+      pdf.save(pdfOptions.filename);
     } finally {
-      if (host.isConnected) {
-        host.remove();
+      sheets.forEach(function (sheet, index) {
+        if (previousSheetStyles[index] === null) {
+          sheet.removeAttribute("style");
+        } else {
+          sheet.setAttribute("style", previousSheetStyles[index]);
+        }
+      });
+      if (previousHostStyle === null) {
+        host.removeAttribute("style");
+      } else {
+        host.setAttribute("style", previousHostStyle);
       }
     }
   }
