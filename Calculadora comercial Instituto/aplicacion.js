@@ -5662,21 +5662,14 @@
         stagingHost.appendChild(sheet);
         await waitForNextPrintFrame();
 
-        var captureWidth = Math.ceil(Math.max(
-          sheet.scrollWidth,
-          sheet.getBoundingClientRect().width,
-          document.documentElement.clientWidth
-        ));
-        var captureHeight = Math.ceil(Math.max(
-          sheet.scrollHeight,
-          sheet.getBoundingClientRect().height
-        ));
-        options.html2canvas.width = Math.ceil(sheet.scrollWidth);
+        // La página puede estar embebida en un contenedor más ancho. Para el
+        // PDF se usa exclusivamente el tamaño de la hoja A4 ya preparada.
+        var captureWidth = Math.ceil(sheet.scrollWidth);
+        var captureHeight = Math.ceil(sheet.scrollHeight);
+        options.html2canvas.width = captureWidth;
         options.html2canvas.height = captureHeight;
         options.html2canvas.windowWidth = captureWidth;
         options.html2canvas.windowHeight = captureHeight;
-        options.html2canvas.x = 0;
-        options.html2canvas.y = 0;
         options.html2canvas.scrollX = 0;
         options.html2canvas.scrollY = 0;
 
